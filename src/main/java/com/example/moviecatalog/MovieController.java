@@ -71,8 +71,8 @@ public class MovieController {
         List<Movie> filtered = movies.stream()
                 .filter(m -> genre == null || m.getGenre().equals(genre))
                 .filter(m -> rating == null || m.getRating().equals(rating))
-                .filter(m -> minPrice == null || m.getPrice() > minPrice)
-                .filter(m -> maxPrice == null || m.getPrice() < maxPrice)
+                .filter(m -> minPrice == null || m.getPrice() >= minPrice)
+                .filter(m -> maxPrice == null || m.getPrice() <= maxPrice)
                 .collect(Collectors.toList());
 
         int fromIndex = page * size;
@@ -154,7 +154,7 @@ public class MovieController {
 
     @Operation(summary = "Get movies by studio")
     @GetMapping("/studios/{sid}/movies")
-    public ResponseEntity<?> getMoviesBySid(@PathVariable int sid) {
+    public ResponseEntity<List<Movie>> getMoviesBySid(@PathVariable int sid) {
         List<Movie> matching = new ArrayList<>();
         for (Movie movie : movies) {
             if (movie.getStudio() == sid) {
