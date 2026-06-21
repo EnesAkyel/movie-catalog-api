@@ -332,7 +332,7 @@ class MovieControllerTest {
 
     @Test
     void getAllStudios_returns200WithPaginatedList() throws Exception {
-        when(studioService.getStudios(eq(0), eq(10)))
+        when(studioService.getStudios(0, 10))
                 .thenReturn(studioPage(validStudio(1), validStudio(2)));
 
         mockMvc.perform(get("/api/v1/studios"))
@@ -343,7 +343,7 @@ class MovieControllerTest {
 
     @Test
     void getAllStudios_pageOutOfRange_returnsEmptyContent() throws Exception {
-        when(studioService.getStudios(eq(999), eq(10)))
+        when(studioService.getStudios(999, 10))
                 .thenReturn(new PageResponse<>(List.of(), 999, 10, 0));
 
         mockMvc.perform(get("/api/v1/studios").param("page", "999"))
