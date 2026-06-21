@@ -38,10 +38,10 @@ public class GlobalExceptionHandler {
             BindingResult bindingResult = ex.getBindingResult();
 
             for (FieldError fieldError : bindingResult.getFieldErrors()) {
-                logger.error(fieldError.getCode());
-                logger.error(fieldError.getField());
-                logger.error(fieldError.toString());
-                logger.error(fieldError.getDefaultMessage());
+                logger.error("{}", fieldError.getCode());
+                logger.error("{}", fieldError.getField());
+                logger.error("{}", fieldError);
+                logger.error("{}", fieldError.getDefaultMessage());
 
                 FieldErrorMessage fieldErrorMessage = new FieldErrorMessage();
                 fieldErrorMessage.setField(fieldError.getField());

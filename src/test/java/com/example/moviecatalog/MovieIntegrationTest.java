@@ -151,7 +151,7 @@ class MovieIntegrationTest {
                 .when().post("/api/v1/movie")
                 .then().statusCode(400)
                 .body("message", equalTo("Spring Validation Error"))
-                .body("errors.field", hasItem("MID"));
+                .body("errors.field", hasItem("mid"));
     }
 
     @Test

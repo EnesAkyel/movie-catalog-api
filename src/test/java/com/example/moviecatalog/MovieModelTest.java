@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -25,7 +26,9 @@ class MovieModelTest {
 
     @Test
     void hashCode_sameMid_returnsSameValue() {
-        assertEquals(movie(1000).hashCode(), movie(1000).hashCode());
+        Movie a = movie(1000);
+        Movie b = movie(1000);
+        assertEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
@@ -47,7 +50,12 @@ class MovieModelTest {
 
     @Test
     void equals_null_returnsFalse() {
-        assertNotEquals(null, movie(1000));
+        assertFalse(movie(1000).equals(null));
+    }
+
+    @Test
+    void equals_differentClass_returnsFalse() {
+        assertFalse(movie(1000).equals("not a movie"));
     }
 
     @Test
@@ -63,6 +71,14 @@ class MovieModelTest {
     @Test
     void compareTo_sameMid_returnsZero() {
         assertEquals(0, movie(1000).compareTo(movie(1000)));
+    }
+
+    @Test
+    void toString_containsMidAndName() {
+        Movie m = movie(1000);
+        String result = m.toString();
+        assertTrue(result.contains("1000"));
+        assertTrue(result.contains("Test Movie"));
     }
 
     @Test
