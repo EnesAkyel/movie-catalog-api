@@ -8,10 +8,10 @@ import jakarta.validation.constraints.Positive;
 import org.hibernate.validator.constraints.Range;
 
 public class Movie implements Comparable<Movie> {
-    @NotNull(message = "MID must be present")
-    @Digits(integer=4,fraction=0, message = "MID must be an integer")
-    @Range(min=1000,max=9999, message = "MID must be a 4 digit number")
-    private int MID;
+    @NotNull(message = "Movie ID must be present")
+    @Digits(integer=4,fraction=0, message = "Movie ID must be an integer")
+    @Range(min=1000,max=9999, message = "Movie ID must be a 4 digit number")
+    private int mid;
 
     @NotEmpty(message = "Name must have length greater than 0")
     @NotNull(message = "Name must be present")
@@ -31,15 +31,15 @@ public class Movie implements Comparable<Movie> {
     @Pattern(regexp = "^(G|PG|PG-13|R|NC-17)$", message = "Rating must be one of G, PG, PG-13, R, NC-17")
     private String rating;
 
-    @NotNull(message = "SID must be present")
-    @Digits(integer=3,fraction=0, message = "SID must be an integer with up to 3 digits")
-    @Range(min=1,max=100, message = "SID must be between 1 and 100")
+    @NotNull(message = "Studio ID must be present")
+    @Digits(integer=3,fraction=0, message = "Studio ID must be an integer with up to 3 digits")
+    @Range(min=1,max=100, message = "Studio ID must be between 1 and 100")
     @Positive(message = "Studio ID must be bigger than 0")
     private int studioID;
 
     @Override
     public int hashCode() {
-        return Integer.hashCode(MID);
+        return Integer.hashCode(mid);
     }
 
     @Override
@@ -54,20 +54,20 @@ public class Movie implements Comparable<Movie> {
             return false;
         }
         final Movie other = (Movie) obj;
-        return this.MID == other.MID;
+        return this.mid == other.mid;
     }
 
     @Override
     public String toString() {
-        return "Movie{" + "MID=" + MID + ", name=" + name + ", genre=" + genre + ", price=" + price + ", rating=" + rating + '}';
+        return "Movie{" + "MID=" + mid + ", name=" + name + ", genre=" + genre + ", price=" + price + ", rating=" + rating + '}';
     }
 
     public int getMID() {
-        return MID;
+        return mid;
     }
 
-    public void setMID(int MID) {
-        this.MID = MID;
+    public void setMID(int mid) {
+        this.mid = mid;
     }
 
     public String getName() {
@@ -112,6 +112,6 @@ public class Movie implements Comparable<Movie> {
 
     @Override
     public int compareTo(Movie other) {
-        return Integer.compare(this.MID, other.MID);
+        return Integer.compare(this.mid, other.mid);
     }
 }

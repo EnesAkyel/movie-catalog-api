@@ -25,7 +25,9 @@ class MovieModelTest {
 
     @Test
     void hashCode_sameMid_returnsSameValue() {
-        assertEquals(movie(1000).hashCode(), movie(1000).hashCode());
+        Movie a = movie(1000);
+        Movie b = movie(1000);
+        assertEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
@@ -51,6 +53,11 @@ class MovieModelTest {
     }
 
     @Test
+    void equals_differentClass_returnsFalse() {
+        assertNotEquals(new Object(), movie(1000));
+    }
+
+    @Test
     void compareTo_lowerMidComesFirst() {
         assertTrue(movie(1000).compareTo(movie(2000)) < 0);
     }
@@ -63,6 +70,14 @@ class MovieModelTest {
     @Test
     void compareTo_sameMid_returnsZero() {
         assertEquals(0, movie(1000).compareTo(movie(1000)));
+    }
+
+    @Test
+    void toString_containsMidAndName() {
+        Movie m = movie(1000);
+        String result = m.toString();
+        assertTrue(result.contains("1000"));
+        assertTrue(result.contains("Test Movie"));
     }
 
     @Test

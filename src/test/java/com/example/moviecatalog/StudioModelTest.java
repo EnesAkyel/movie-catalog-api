@@ -18,7 +18,9 @@ class StudioModelTest {
 
     @Test
     void hashCode_sameSid_returnsSameValue() {
-        assertEquals(studio(10).hashCode(), studio(10).hashCode());
+        Studio a = studio(10);
+        Studio b = studio(10);
+        assertEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
@@ -44,6 +46,11 @@ class StudioModelTest {
     }
 
     @Test
+    void equals_differentClass_returnsFalse() {
+        assertNotEquals(new Object(), studio(10));
+    }
+
+    @Test
     void compareTo_lowerSidComesFirst() {
         assertTrue(studio(10).compareTo(studio(20)) < 0);
     }
@@ -58,6 +65,14 @@ class StudioModelTest {
         Studio a = studio(10);
         Studio b = studio(10);
         assertEquals(0, a.compareTo(b));
+    }
+
+    @Test
+    void toString_containsSidAndName() {
+        Studio s = studio(10);
+        String result = s.toString();
+        assertTrue(result.contains("10"));
+        assertTrue(result.contains("Test Studio"));
     }
 
     @Test

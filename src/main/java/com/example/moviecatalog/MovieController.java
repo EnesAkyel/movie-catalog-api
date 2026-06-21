@@ -6,7 +6,6 @@ import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -73,7 +72,7 @@ public class MovieController {
                 .filter(m -> rating == null || m.getRating().equals(rating))
                 .filter(m -> minPrice == null || m.getPrice() >= minPrice)
                 .filter(m -> maxPrice == null || m.getPrice() <= maxPrice)
-                .collect(Collectors.toList());
+                .toList();
 
         int fromIndex = page * size;
         int toIndex = Math.min(fromIndex + size, filtered.size());
@@ -90,7 +89,7 @@ public class MovieController {
                 return new ResponseEntity<>(movie, HttpStatus.OK);
             }
         }
-        return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
     @Operation(summary = "Create a movie")
@@ -136,7 +135,7 @@ public class MovieController {
             return new ResponseEntity<>(movie, HttpStatus.OK);
         }
         logger.warn("Movie not found for deletion: MID={}", mid);
-        return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
     @Operation(summary = "List studios", description = "Returns a paginated list of studios.")
@@ -164,7 +163,7 @@ public class MovieController {
         if (!matching.isEmpty()) {
             return new ResponseEntity<>(matching, HttpStatus.OK);
         }
-        return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
     @Operation(summary = "Create a studio")
@@ -206,6 +205,6 @@ public class MovieController {
             return new ResponseEntity<>(studio, HttpStatus.OK);
         }
         logger.warn("Studio not found for deletion: SID={}", sid);
-        return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 }

@@ -2,6 +2,7 @@ package com.example.moviecatalog;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ValidationErrorMessage implements Serializable {
     private String message = "Spring Validation Error";
@@ -14,9 +15,9 @@ public class ValidationErrorMessage implements Serializable {
         this.message = message;
     }
 
-    private ArrayList<FieldErrorMessage> errors = new ArrayList();
+    private final List<FieldErrorMessage> errors = new ArrayList<>();
 
-    public ArrayList<FieldErrorMessage> getErrors() {
+    public List<FieldErrorMessage> getErrors() {
         return errors;
     }
 

@@ -86,6 +86,34 @@ class MovieControllerTest {
     }
 
     @Test
+    void getAllMovies_filterByPriceAboveAllMovies_returnsEmptyContent() throws Exception {
+        mockMvc.perform(get("/api/v1/movies").param("minPrice", "10000"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(0)));
+    }
+
+    @Test
+    void getAllMovies_filterByPriceBelowAllMovies_returnsEmptyContent() throws Exception {
+        mockMvc.perform(get("/api/v1/movies").param("maxPrice", "0"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(0)));
+    }
+
+    @Test
+    void getAllMovies_pageOutOfRange_returnsEmptyContent() throws Exception {
+        mockMvc.perform(get("/api/v1/movies").param("page", "999"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(0)));
+    }
+
+    @Test
+    void getAllStudios_pageOutOfRange_returnsEmptyContent() throws Exception {
+        mockMvc.perform(get("/api/v1/studios").param("page", "999"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(0)));
+    }
+
+    @Test
     void getAllMovies_filterByGenreAndRating_returnsMatchingMovies() throws Exception {
         mockMvc.perform(get("/api/v1/movies").param("genre", "Action").param("rating", "PG-13"))
                 .andExpect(status().isOk())
@@ -183,7 +211,7 @@ class MovieControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(validMovie(mid))))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors[0].field", is("MID")));
+                .andExpect(jsonPath("$.errors[0].field", is("mid")));
     }
 
     @ParameterizedTest(name = "genre=\"{0}\" is invalid and should return 400")
@@ -293,7 +321,41 @@ class MovieControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(studio)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors[0].field", is("SID")));
+                .andExpect(jsonPath("$.errors[0].field", is("sid")));
+    }
+
+    @Test
+    void addStudio_duplicate_returns409() throws Exception {
+        Studio studio = new Studio(94, "Duplicate Studio");
+        String body = json(studio);
+        mockMvc.perform(post("/api/v1/studio").contentType(MediaType.APPLICATION_JSON).content(body));
+        mockMvc.perform(post("/api/v1/studio").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void editStudio_existing_returns200WithUpdatedName() throws Exception {
+        Studio studio = new Studio(92, "Original Name");
+        mockMvc.perform(post("/api/v1/studio")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(studio)))
+                .andExpect(status().isCreated());
+
+        Studio updated = new Studio(92, "Updated Name");
+        mockMvc.perform(put("/api/v1/studio/92")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(updated)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name", is("Updated Name")));
+    }
+
+    @Test
+    void editStudio_notFound_returns404() throws Exception {
+        Studio updated = new Studio(100, "Not Exist");
+        mockMvc.perform(put("/api/v1/studio/100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(updated)))
+                .andExpect(status().isNotFound());
     }
 
     @Test
