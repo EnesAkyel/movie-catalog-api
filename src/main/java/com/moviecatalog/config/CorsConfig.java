@@ -1,4 +1,4 @@
-package com.example.moviecatalog;
+package com.moviecatalog.config;
 
 import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Bean;

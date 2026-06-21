@@ -1,4 +1,4 @@
-package com.example.moviecatalog;
+package com.moviecatalog.model;
 
 import org.junit.jupiter.api.Test;
 
@@ -49,12 +49,12 @@ class MovieModelTest {
 
     @Test
     void equals_null_returnsFalse() {
-        assertNotEquals(null, movie(1000));
+        assertNotEquals(movie(1000), null);
     }
 
     @Test
     void equals_differentClass_returnsFalse() {
-        assertNotEquals(new Object(), movie(1000));
+        assertNotEquals(movie(1000), new Object());
     }
 
     @Test

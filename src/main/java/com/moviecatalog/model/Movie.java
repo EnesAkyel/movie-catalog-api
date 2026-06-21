@@ -1,4 +1,4 @@
-package com.example.moviecatalog;
+package com.moviecatalog.model;
 
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotEmpty;

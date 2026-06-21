@@ -1,13 +1,13 @@
-package com.example.moviecatalog;
+package com.moviecatalog.util;
 
 import java.util.List;
 
 public class PageResponse<T> {
-    private List<T> content;
-    private int page;
-    private int size;
-    private long totalElements;
-    private int totalPages;
+    private final List<T> content;
+    private final int page;
+    private final int size;
+    private final long totalElements;
+    private final int totalPages;
 
     public PageResponse(List<T> content, int page, int size, long totalElements) {
         this.content = content;

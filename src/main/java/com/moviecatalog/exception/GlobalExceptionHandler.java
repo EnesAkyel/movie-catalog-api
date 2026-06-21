@@ -1,4 +1,4 @@
-package com.example.moviecatalog;
+package com.moviecatalog.exception;
 
 import java.io.InterruptedIOException;
 import org.slf4j.Logger;
@@ -17,32 +17,23 @@ public class GlobalExceptionHandler {
 
         @ExceptionHandler(Exception.class)
         public ResponseEntity<String> handleException(Exception ex) {
-            String result = "Exception: " + ex.getMessage() + ":" + ex;
-            logger.warn("{}", ex.getClass());
-            logger.warn("{}", result);
-            return new ResponseEntity<>(result, HttpStatus.BAD_REQUEST);
+            logger.warn("Unhandled exception", ex);
+            return new ResponseEntity<>("An unexpected error occurred", HttpStatus.BAD_REQUEST);
         }
 
         @ExceptionHandler(InterruptedIOException.class)
         public ResponseEntity<String> handleIIOException(InterruptedIOException ex) {
-            String result = "InterruptedIOException: " + ex.getMessage();
-            logger.warn("{}", ex.getClass());
-            logger.warn("{}", result);
-            return new ResponseEntity<>(result, HttpStatus.BAD_REQUEST);
+            logger.warn("Unhandled InterruptedIOException", ex);
+            return new ResponseEntity<>("An unexpected error occurred", HttpStatus.BAD_REQUEST);
         }
 
         @ExceptionHandler(MethodArgumentNotValidException.class)
         public ResponseEntity<ValidationErrorMessage> handleValidationException(MethodArgumentNotValidException ex) {
-            logger.error("We have an exception: MethodArgumentNotValidException");
             ValidationErrorMessage validationError = new ValidationErrorMessage();
             BindingResult bindingResult = ex.getBindingResult();
 
             for (FieldError fieldError : bindingResult.getFieldErrors()) {
-                logger.error("{}", fieldError.getCode());
-                logger.error("{}", fieldError.getField());
-                logger.error("{}", fieldError);
-                logger.error("{}", fieldError.getDefaultMessage());
-
+                logger.warn("Validation error on '{}': {}", fieldError.getField(), fieldError.getDefaultMessage());
                 FieldErrorMessage fieldErrorMessage = new FieldErrorMessage();
                 fieldErrorMessage.setField(fieldError.getField());
                 fieldErrorMessage.setMessage(fieldError.getDefaultMessage());
