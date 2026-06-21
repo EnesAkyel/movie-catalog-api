@@ -28,8 +28,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class MovieController {
     private static final Logger logger = LoggerFactory.getLogger(MovieController.class);
 
-    private ArrayList<Movie> movies = new ArrayList();
-    private ArrayList<Studio> studios = new ArrayList();
+    private final ArrayList<Movie> movies = new ArrayList<>();
+    private final ArrayList<Studio> studios = new ArrayList<>();
 
     public MovieController() {
         Random random = new Random();
@@ -97,9 +97,11 @@ public class MovieController {
     @PostMapping(value = "/movie", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Movie> addMovie(@RequestBody @Valid Movie newMovie) {
         if (movies.contains(newMovie)) {
-            return new ResponseEntity<>(newMovie, HttpStatus.FOUND);
+            logger.warn("Movie with MID {} already exists", newMovie.getMID());
+            return new ResponseEntity<>(newMovie, HttpStatus.CONFLICT);
         }
         movies.add(newMovie);
+        logger.info("Movie created: MID={}", newMovie.getMID());
         return new ResponseEntity<>(newMovie, HttpStatus.CREATED);
     }
 
@@ -115,9 +117,11 @@ public class MovieController {
             existing.setPrice(newMovie.getPrice());
             existing.setRating(newMovie.getRating());
             existing.setStudio(newMovie.getStudio());
+            logger.info("Movie updated: MID={}", mid);
             return new ResponseEntity<>(existing, HttpStatus.OK);
         }
-        return new ResponseEntity<>(newMovie, HttpStatus.CONFLICT);
+        logger.warn("Movie not found for update: MID={}", mid);
+        return new ResponseEntity<>(newMovie, HttpStatus.NOT_FOUND);
     }
 
     @Operation(summary = "Delete a movie")
@@ -128,8 +132,10 @@ public class MovieController {
         if (movies.contains(tempMovie)) {
             Movie movie = movies.get(movies.indexOf(tempMovie));
             movies.remove(movie);
+            logger.info("Movie deleted: MID={}", mid);
             return new ResponseEntity<>(movie, HttpStatus.OK);
         }
+        logger.warn("Movie not found for deletion: MID={}", mid);
         return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
     }
 
@@ -165,9 +171,11 @@ public class MovieController {
     @PostMapping(value = "/studio", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Studio> addStudio(@RequestBody @Valid Studio newStudio) {
         if (studios.contains(newStudio)) {
-            return new ResponseEntity<>(newStudio, HttpStatus.FOUND);
+            logger.warn("Studio with SID {} already exists", newStudio.getSID());
+            return new ResponseEntity<>(newStudio, HttpStatus.CONFLICT);
         }
         studios.add(newStudio);
+        logger.info("Studio created: SID={}", newStudio.getSID());
         return new ResponseEntity<>(newStudio, HttpStatus.CREATED);
     }
 
@@ -179,9 +187,11 @@ public class MovieController {
             Studio existing = studios.get(studios.indexOf(newStudio));
             existing.setSID(sid);
             existing.setName(newStudio.getName());
+            logger.info("Studio updated: SID={}", sid);
             return new ResponseEntity<>(existing, HttpStatus.OK);
         }
-        return new ResponseEntity<>(newStudio, HttpStatus.CONFLICT);
+        logger.warn("Studio not found for update: SID={}", sid);
+        return new ResponseEntity<>(newStudio, HttpStatus.NOT_FOUND);
     }
 
     @Operation(summary = "Delete a studio")
@@ -192,8 +202,10 @@ public class MovieController {
         if (studios.contains(tempStudio)) {
             Studio studio = studios.get(studios.indexOf(tempStudio));
             studios.remove(studio);
+            logger.info("Studio deleted: SID={}", sid);
             return new ResponseEntity<>(studio, HttpStatus.OK);
         }
+        logger.warn("Studio not found for deletion: SID={}", sid);
         return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
     }
 }
