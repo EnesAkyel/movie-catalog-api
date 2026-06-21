@@ -7,7 +7,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -50,12 +49,12 @@ class MovieModelTest {
 
     @Test
     void equals_null_returnsFalse() {
-        assertFalse(movie(1000).equals(null));
+        assertNotEquals(null, movie(1000));
     }
 
     @Test
     void equals_differentClass_returnsFalse() {
-        assertFalse(movie(1000).equals("not a movie"));
+        assertNotEquals(new Object(), movie(1000));
     }
 
     @Test

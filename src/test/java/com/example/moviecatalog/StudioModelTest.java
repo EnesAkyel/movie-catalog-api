@@ -7,7 +7,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -43,12 +42,12 @@ class StudioModelTest {
 
     @Test
     void equals_null_returnsFalse() {
-        assertFalse(studio(10).equals(null));
+        assertNotEquals(null, studio(10));
     }
 
     @Test
     void equals_differentClass_returnsFalse() {
-        assertFalse(studio(10).equals("not a studio"));
+        assertNotEquals(new Object(), studio(10));
     }
 
     @Test
