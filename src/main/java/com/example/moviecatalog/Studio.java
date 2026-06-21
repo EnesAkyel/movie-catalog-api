@@ -26,9 +26,7 @@ public class Studio implements Comparable<Studio> {
 
     @Override
     public int hashCode() {
-        int hash = 7;
-        hash = 17 * hash + (int) (this.SID ^ (this.SID >>> 32));
-        return hash;
+        return Integer.hashCode(SID);
     }
 
     @Override
@@ -69,6 +67,6 @@ public class Studio implements Comparable<Studio> {
 
     @Override
     public int compareTo(Studio other) {
-        return (int)(this.SID - other.SID);
+        return Integer.compare(this.SID, other.SID);
     }
 }

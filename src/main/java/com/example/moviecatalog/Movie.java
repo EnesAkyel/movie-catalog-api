@@ -20,7 +20,7 @@ public class Movie implements Comparable<Movie> {
     @NotEmpty(message = "Genre must have length greater than 0")
     @NotNull(message = "Genre must be present")
     @Pattern(regexp = "^(Action|Romance|Comedy|Horror|Drama|Thriller|Sci-Fi|Fantasy|Mystery|Adventure)$",
-            message = "Year must be one of Action, Romance, Comedy, Horror, Drama, Thriller, Sci-Fi, Fantasy, Mystery, Adventure")
+            message = "Genre must be one of Action, Romance, Comedy, Horror, Drama, Thriller, Sci-Fi, Fantasy, Mystery, Adventure")
     private String genre;
 
     @Positive(message = "Price must be bigger than $0.00")
@@ -28,7 +28,7 @@ public class Movie implements Comparable<Movie> {
 
     @NotEmpty(message = "Rating must have length greater than 0")
     @NotNull(message = "Rating must be present")
-    @Pattern(regexp = "^(G|PG|PG-13|R|NC-17)$", message = "Year must be one of G, PG, PG-13, R, NC-17")
+    @Pattern(regexp = "^(G|PG|PG-13|R|NC-17)$", message = "Rating must be one of G, PG, PG-13, R, NC-17")
     private String rating;
 
     @NotNull(message = "SID must be present")
@@ -39,9 +39,7 @@ public class Movie implements Comparable<Movie> {
 
     @Override
     public int hashCode() {
-        int hash = 7;
-        hash = 17 * hash + (this.MID ^ (this.MID >>> 32));
-        return hash;
+        return Integer.hashCode(MID);
     }
 
     @Override
@@ -114,6 +112,6 @@ public class Movie implements Comparable<Movie> {
 
     @Override
     public int compareTo(Movie other) {
-        return this.MID - other.MID;
+        return Integer.compare(this.MID, other.MID);
     }
 }
