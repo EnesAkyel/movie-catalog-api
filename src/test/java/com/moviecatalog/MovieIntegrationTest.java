@@ -1,5 +1,7 @@
-package com.example.moviecatalog;
+package com.moviecatalog;
 
+import com.moviecatalog.model.Movie;
+import com.moviecatalog.model.Studio;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;

@@ -1,20 +1,30 @@
-package com.example.moviecatalog;
+package com.moviecatalog.controller;
 
+import com.moviecatalog.model.Movie;
+import com.moviecatalog.model.Studio;
+import com.moviecatalog.service.MovieService;
+import com.moviecatalog.service.StudioService;
+import com.moviecatalog.util.PageResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Optional;
 
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isA;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -31,6 +41,12 @@ class MovieControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @MockitoBean
+    private MovieService movieService;
+
+    @MockitoBean
+    private StudioService studioService;
+
     private Movie validMovie(int mid) {
         Movie m = new Movie();
         m.setMID(mid);
@@ -42,22 +58,42 @@ class MovieControllerTest {
         return m;
     }
 
+    private Studio validStudio(int sid) {
+        return new Studio(sid, "Test Studio");
+    }
+
     private String json(Object obj) throws Exception {
         return objectMapper.writeValueAsString(obj);
     }
 
+    private PageResponse<Movie> moviePage(Movie... movies) {
+        return new PageResponse<>(List.of(movies), 0, 10, movies.length);
+    }
+
+    private PageResponse<Studio> studioPage(Studio... studios) {
+        return new PageResponse<>(List.of(studios), 0, 10, studios.length);
+    }
+
+    // --- Movie GET ---
+
     @Test
     void getAllMovies_returns200WithPaginatedList() throws Exception {
+        when(movieService.getMovies(isNull(), isNull(), isNull(), isNull(), eq(0), eq(10)))
+                .thenReturn(moviePage(validMovie(1001), validMovie(1002)));
+
         mockMvc.perform(get("/api/v1/movies"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content", hasSize(greaterThan(0))))
-                .andExpect(jsonPath("$.totalElements", greaterThan(0)))
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.totalElements", is(2)))
                 .andExpect(jsonPath("$.page", is(0)))
                 .andExpect(jsonPath("$.size", is(10)));
     }
 
     @Test
     void getAllMovies_pageParam_returnsCorrectPage() throws Exception {
+        when(movieService.getMovies(isNull(), isNull(), isNull(), isNull(), eq(1), eq(5)))
+                .thenReturn(new PageResponse<>(List.of(), 1, 5, 0));
+
         mockMvc.perform(get("/api/v1/movies").param("page", "1").param("size", "5"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.page", is(1)))
@@ -66,27 +102,39 @@ class MovieControllerTest {
 
     @Test
     void getAllMovies_filterByGenre_returnsMatchingMovies() throws Exception {
+        when(movieService.getMovies(eq("Action"), isNull(), isNull(), isNull(), anyInt(), anyInt()))
+                .thenReturn(moviePage(validMovie(1003)));
+
         mockMvc.perform(get("/api/v1/movies").param("genre", "Action"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content", isA(List.class)));
+                .andExpect(jsonPath("$.content", hasSize(1)));
     }
 
     @Test
     void getAllMovies_filterByRating_returnsMatchingMovies() throws Exception {
+        when(movieService.getMovies(isNull(), eq("R"), isNull(), isNull(), anyInt(), anyInt()))
+                .thenReturn(moviePage(validMovie(1004)));
+
         mockMvc.perform(get("/api/v1/movies").param("rating", "R"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content", isA(List.class)));
+                .andExpect(jsonPath("$.content", hasSize(1)));
     }
 
     @Test
     void getAllMovies_filterByPriceRange_returnsResults() throws Exception {
+        when(movieService.getMovies(isNull(), isNull(), eq(0.0), eq(100.0), anyInt(), anyInt()))
+                .thenReturn(moviePage(validMovie(1005)));
+
         mockMvc.perform(get("/api/v1/movies").param("minPrice", "0").param("maxPrice", "100"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content", hasSize(greaterThan(0))));
+                .andExpect(jsonPath("$.content", hasSize(1)));
     }
 
     @Test
     void getAllMovies_filterByPriceAboveAllMovies_returnsEmptyContent() throws Exception {
+        when(movieService.getMovies(isNull(), isNull(), eq(10000.0), isNull(), anyInt(), anyInt()))
+                .thenReturn(new PageResponse<>(List.of(), 0, 10, 0));
+
         mockMvc.perform(get("/api/v1/movies").param("minPrice", "10000"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(0)));
@@ -94,6 +142,9 @@ class MovieControllerTest {
 
     @Test
     void getAllMovies_filterByPriceBelowAllMovies_returnsEmptyContent() throws Exception {
+        when(movieService.getMovies(isNull(), isNull(), isNull(), eq(0.0), anyInt(), anyInt()))
+                .thenReturn(new PageResponse<>(List.of(), 0, 10, 0));
+
         mockMvc.perform(get("/api/v1/movies").param("maxPrice", "0"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(0)));
@@ -101,106 +152,84 @@ class MovieControllerTest {
 
     @Test
     void getAllMovies_pageOutOfRange_returnsEmptyContent() throws Exception {
+        when(movieService.getMovies(isNull(), isNull(), isNull(), isNull(), eq(999), eq(10)))
+                .thenReturn(new PageResponse<>(List.of(), 999, 10, 0));
+
         mockMvc.perform(get("/api/v1/movies").param("page", "999"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(0)));
     }
 
     @Test
-    void getAllStudios_pageOutOfRange_returnsEmptyContent() throws Exception {
-        mockMvc.perform(get("/api/v1/studios").param("page", "999"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content", hasSize(0)));
-    }
-
-    @Test
     void getAllMovies_filterByGenreAndRating_returnsMatchingMovies() throws Exception {
+        when(movieService.getMovies(eq("Action"), eq("PG-13"), isNull(), isNull(), anyInt(), anyInt()))
+                .thenReturn(moviePage(validMovie(1006)));
+
         mockMvc.perform(get("/api/v1/movies").param("genre", "Action").param("rating", "PG-13"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content", isA(List.class)));
+                .andExpect(jsonPath("$.content", hasSize(1)));
     }
 
     @Test
     void getMovieByMid_found_returns200() throws Exception {
-        mockMvc.perform(post("/api/v1/movie")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json(validMovie(9991))))
-                .andExpect(status().isCreated());
+        when(movieService.findById(1001)).thenReturn(Optional.of(validMovie(1001)));
 
-        mockMvc.perform(get("/api/v1/movie/9991"))
+        mockMvc.perform(get("/api/v1/movie/1001"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.mid", is(9991)));
+                .andExpect(jsonPath("$.mid", is(1001)));
     }
 
     @Test
     void getMovieByMid_notFound_returns404() throws Exception {
+        when(movieService.findById(1)).thenReturn(Optional.empty());
+
         mockMvc.perform(get("/api/v1/movie/1"))
                 .andExpect(status().isNotFound());
     }
 
-    @Test
-    void getAllStudios_returns200WithPaginatedList() throws Exception {
-        mockMvc.perform(get("/api/v1/studios"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content", hasSize(greaterThan(0))))
-                .andExpect(jsonPath("$.totalElements", greaterThan(0)));
-    }
-
-    @Test
-    void getMoviesBySid_found_returns200() throws Exception {
-        Studio studio = new Studio(95, "Test Studio");
-        mockMvc.perform(post("/api/v1/studio")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json(studio)));
-
-        Movie movie = validMovie(9990);
-        movie.setStudio(95);
-        mockMvc.perform(post("/api/v1/movie")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json(movie)))
-                .andExpect(status().isCreated());
-
-        mockMvc.perform(get("/api/v1/studios/95/movies"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(greaterThan(0))));
-    }
-
-    @Test
-    void getMoviesBySid_notFound_returns404() throws Exception {
-        mockMvc.perform(get("/api/v1/studios/200/movies"))
-                .andExpect(status().isNotFound());
-    }
+    // --- Movie POST ---
 
     @Test
     void addMovie_validInput_returns201() throws Exception {
+        Movie movie = validMovie(9992);
+        when(movieService.add(any())).thenReturn(Optional.of(movie));
+
         mockMvc.perform(post("/api/v1/movie")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(json(validMovie(9992))))
+                        .content(json(movie)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.mid", is(9992)));
     }
 
     @Test
     void addMovie_duplicate_returns409() throws Exception {
-        String body = json(validMovie(9993));
-        mockMvc.perform(post("/api/v1/movie").contentType(MediaType.APPLICATION_JSON).content(body));
-        mockMvc.perform(post("/api/v1/movie").contentType(MediaType.APPLICATION_JSON).content(body))
+        when(movieService.add(any())).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/api/v1/movie")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(validMovie(9993))))
                 .andExpect(status().isConflict());
     }
 
     @Test
     void addMovie_midAtLowerBoundary1000_isAccepted() throws Exception {
+        Movie movie = validMovie(1000);
+        when(movieService.add(any())).thenReturn(Optional.of(movie));
+
         mockMvc.perform(post("/api/v1/movie")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(json(validMovie(1000))))
-                .andExpect(status().is2xxSuccessful());
+                        .content(json(movie)))
+                .andExpect(status().isCreated());
     }
 
     @Test
     void addMovie_midAtUpperBoundary9999_returns201() throws Exception {
+        Movie movie = validMovie(9999);
+        when(movieService.add(any())).thenReturn(Optional.of(movie));
+
         mockMvc.perform(post("/api/v1/movie")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(json(validMovie(9999))))
+                        .content(json(movie)))
                 .andExpect(status().isCreated());
     }
 
@@ -257,15 +286,14 @@ class MovieControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    // --- Movie PUT / DELETE ---
+
     @Test
     void editMovie_existing_returns200WithUpdatedName() throws Exception {
-        mockMvc.perform(post("/api/v1/movie")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json(validMovie(9985))))
-                .andExpect(status().isCreated());
-
         Movie updated = validMovie(9985);
         updated.setName("Updated Title");
+        when(movieService.update(eq(9985), any())).thenReturn(Optional.of(updated));
+
         mockMvc.perform(put("/api/v1/movie/9985")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(updated)))
@@ -275,10 +303,7 @@ class MovieControllerTest {
 
     @Test
     void editMovie_notFound_returns404() throws Exception {
-        mockMvc.perform(post("/api/v1/movie")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json(validMovie(9984))));
-        mockMvc.perform(delete("/api/v1/movie/9984"));
+        when(movieService.update(eq(9984), any())).thenReturn(Optional.empty());
 
         mockMvc.perform(put("/api/v1/movie/9984")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -288,10 +313,7 @@ class MovieControllerTest {
 
     @Test
     void deleteMovie_existing_returns200() throws Exception {
-        mockMvc.perform(post("/api/v1/movie")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json(validMovie(9986))))
-                .andExpect(status().isCreated());
+        when(movieService.delete(9986)).thenReturn(Optional.of(validMovie(9986)));
 
         mockMvc.perform(delete("/api/v1/movie/9986"))
                 .andExpect(status().isOk())
@@ -300,13 +322,61 @@ class MovieControllerTest {
 
     @Test
     void deleteMovie_notFound_returns404() throws Exception {
+        when(movieService.delete(1)).thenReturn(Optional.empty());
+
         mockMvc.perform(delete("/api/v1/movie/1"))
                 .andExpect(status().isNotFound());
     }
 
+    // --- Studio GET ---
+
+    @Test
+    void getAllStudios_returns200WithPaginatedList() throws Exception {
+        when(studioService.getStudios(eq(0), eq(10)))
+                .thenReturn(studioPage(validStudio(1), validStudio(2)));
+
+        mockMvc.perform(get("/api/v1/studios"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.totalElements", is(2)));
+    }
+
+    @Test
+    void getAllStudios_pageOutOfRange_returnsEmptyContent() throws Exception {
+        when(studioService.getStudios(eq(999), eq(10)))
+                .thenReturn(new PageResponse<>(List.of(), 999, 10, 0));
+
+        mockMvc.perform(get("/api/v1/studios").param("page", "999"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(0)));
+    }
+
+    @Test
+    void getMoviesBySid_found_returns200() throws Exception {
+        Movie movie = validMovie(1007);
+        movie.setStudio(95);
+        when(movieService.findByStudio(95)).thenReturn(List.of(movie));
+
+        mockMvc.perform(get("/api/v1/studios/95/movies"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)));
+    }
+
+    @Test
+    void getMoviesBySid_notFound_returns404() throws Exception {
+        when(movieService.findByStudio(200)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/studios/200/movies"))
+                .andExpect(status().isNotFound());
+    }
+
+    // --- Studio POST / PUT / DELETE ---
+
     @Test
     void addStudio_validInput_returns201() throws Exception {
-        Studio studio = new Studio(90, "New Studio");
+        Studio studio = validStudio(90);
+        when(studioService.add(any())).thenReturn(Optional.of(studio));
+
         mockMvc.perform(post("/api/v1/studio")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(studio)))
@@ -326,22 +396,19 @@ class MovieControllerTest {
 
     @Test
     void addStudio_duplicate_returns409() throws Exception {
-        Studio studio = new Studio(94, "Duplicate Studio");
-        String body = json(studio);
-        mockMvc.perform(post("/api/v1/studio").contentType(MediaType.APPLICATION_JSON).content(body));
-        mockMvc.perform(post("/api/v1/studio").contentType(MediaType.APPLICATION_JSON).content(body))
+        when(studioService.add(any())).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/api/v1/studio")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(validStudio(94))))
                 .andExpect(status().isConflict());
     }
 
     @Test
     void editStudio_existing_returns200WithUpdatedName() throws Exception {
-        Studio studio = new Studio(92, "Original Name");
-        mockMvc.perform(post("/api/v1/studio")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json(studio)))
-                .andExpect(status().isCreated());
-
         Studio updated = new Studio(92, "Updated Name");
+        when(studioService.update(eq(92), any())).thenReturn(Optional.of(updated));
+
         mockMvc.perform(put("/api/v1/studio/92")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(updated)))
@@ -351,19 +418,17 @@ class MovieControllerTest {
 
     @Test
     void editStudio_notFound_returns404() throws Exception {
-        Studio updated = new Studio(100, "Not Exist");
+        when(studioService.update(eq(100), any())).thenReturn(Optional.empty());
+
         mockMvc.perform(put("/api/v1/studio/100")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(json(updated)))
+                        .content(json(validStudio(100))))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void deleteStudio_existing_returns200() throws Exception {
-        Studio studio = new Studio(91, "Studio To Delete");
-        mockMvc.perform(post("/api/v1/studio")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json(studio)));
+        when(studioService.delete(91)).thenReturn(Optional.of(validStudio(91)));
 
         mockMvc.perform(delete("/api/v1/studio/91"))
                 .andExpect(status().isOk())
@@ -372,6 +437,8 @@ class MovieControllerTest {
 
     @Test
     void deleteStudio_notFound_returns404() throws Exception {
+        when(studioService.delete(200)).thenReturn(Optional.empty());
+
         mockMvc.perform(delete("/api/v1/studio/200"))
                 .andExpect(status().isNotFound());
     }

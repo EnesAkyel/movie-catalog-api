@@ -1,4 +1,4 @@
-package com.example.moviecatalog;
+package com.moviecatalog.util;
 
 import org.junit.jupiter.api.Test;
 

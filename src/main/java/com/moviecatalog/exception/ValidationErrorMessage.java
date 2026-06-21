@@ -1,4 +1,4 @@
-package com.example.moviecatalog;
+package com.moviecatalog.exception;
 
 import java.io.Serializable;
 import java.util.ArrayList;
