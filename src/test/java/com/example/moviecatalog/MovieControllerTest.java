@@ -153,11 +153,11 @@ class MovieControllerTest {
     }
 
     @Test
-    void addMovie_duplicate_returns302() throws Exception {
+    void addMovie_duplicate_returns409() throws Exception {
         String body = json(validMovie(9993));
         mockMvc.perform(post("/api/v1/movie").contentType(MediaType.APPLICATION_JSON).content(body));
         mockMvc.perform(post("/api/v1/movie").contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isFound());
+                .andExpect(status().isConflict());
     }
 
     @Test
@@ -246,7 +246,7 @@ class MovieControllerTest {
     }
 
     @Test
-    void editMovie_notFound_returns409() throws Exception {
+    void editMovie_notFound_returns404() throws Exception {
         mockMvc.perform(post("/api/v1/movie")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json(validMovie(9984))));
@@ -255,7 +255,7 @@ class MovieControllerTest {
         mockMvc.perform(put("/api/v1/movie/9984")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(validMovie(9984))))
-                .andExpect(status().isConflict());
+                .andExpect(status().isNotFound());
     }
 
     @Test

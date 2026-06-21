@@ -56,10 +56,10 @@ class MovieIntegrationTest {
 
     @Test
     @Order(1)
-    void createStudio_returns201or302() throws Exception {
+    void createStudio_returns201or409() throws Exception {
         given().contentType(ContentType.JSON).body(json(new Studio(TEST_SID, "Test Studio")))
                 .when().post("/api/v1/studio")
-                .then().statusCode(anyOf(is(201), is(302)));
+                .then().statusCode(anyOf(is(201), is(409)));
     }
 
     @Test
