@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/EnesAkyel/movie-catalog-api/actions/workflows/ci.yml/badge.svg)](https://github.com/EnesAkyel/movie-catalog-api/actions/workflows/ci.yml)
 
-A RESTful Spring Boot API for managing a catalog of movies and studios.
+A RESTful Spring Boot API for managing a catalog of movies and studios, built as an SDET portfolio project demonstrating layered architecture, validation, and a multi-layer test strategy.
 
 ---
 
@@ -14,11 +14,26 @@ A RESTful Spring Boot API for managing a catalog of movies and studios.
 | Persistence | PostgreSQL 16, Spring Data JPA, Hibernate 6 |
 | Test Database | H2 (in-memory, auto-configured for all test contexts) |
 | Validation | Jakarta Bean Validation |
+| Persistence | In-memory (List) — PostgreSQL migration planned |
 | API Docs | springdoc-openapi 2.8 (Swagger UI) |
 | Unit/Integration Tests | JUnit 5, Mockito, MockMvc, RestAssured |
 | Coverage | JaCoCo |
 | Containerisation | Docker, Docker Compose |
 | CI | GitHub Actions |
+
+---
+
+## Project Structure
+
+```
+src/main/java/com/moviecatalog/
+├── config/          # CORS, OpenAPI, and startup configuration
+├── controller/      # MovieController — HTTP mapping only, delegates to services
+├── exception/       # GlobalExceptionHandler, validation error response models
+├── model/           # Movie, Studio — validated domain models
+├── service/         # MovieService, StudioService — business logic
+└── util/            # PageResponse — generic paginated response wrapper
+```
 
 ---
 
@@ -39,8 +54,29 @@ Base path: `/api/v1`
 | `PUT` | `/studio/{sid}` | Update a studio |
 | `DELETE` | `/studio/{sid}` | Delete a studio |
 
-Full interactive docs available via Swagger UI after starting the app:
+Interactive docs available via Swagger UI after starting the app:
 `http://localhost:8080/swagger-ui/index.html`
+
+### Validation rules
+
+| Field | Rule |
+|---|---|
+| `mid` | 4-digit integer (1000–9999) |
+| `genre` | One of: Action, Romance, Comedy, Horror, Drama, Thriller, Sci-Fi, Fantasy, Mystery, Adventure |
+| `rating` | One of: G, PG, PG-13, R, NC-17 |
+| `price` | Positive (> 0.00) |
+| `sid` | Integer 1–100 |
+
+### Validation error response (HTTP 400)
+
+```json
+{
+  "message": "Spring Validation Error",
+  "errors": [
+    { "field": "mid", "message": "Movie ID must be a 4 digit number" }
+  ]
+}
+```
 
 ---
 
@@ -78,7 +114,7 @@ DB_PASSWORD=postgres
 ```
 
 ```bash
-# Start the application
+# Start the application (uses in-memory data, no DB required)
 ./mvnw spring-boot:run
 
 # Run all tests (uses H2 — no PostgreSQL needed)
