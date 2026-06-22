@@ -1,5 +1,7 @@
 package com.moviecatalog.controller;
 
+import com.moviecatalog.dto.MovieRequest;
+import com.moviecatalog.dto.StudioRequest;
 import com.moviecatalog.model.Movie;
 import com.moviecatalog.model.Studio;
 import com.moviecatalog.service.MovieService;
@@ -58,14 +60,16 @@ public class MovieController {
 
     @Operation(summary = "Create a movie")
     @PostMapping(value = "/movie", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Movie> addMovie(@RequestBody @Valid Movie movie) {
+    public ResponseEntity<Movie> addMovie(@RequestBody @Valid MovieRequest movieRequest) {
+        Movie movie = movieRequest.toMovie();
         Optional<Movie> result = movieService.add(movie);
         return result.map(value -> new ResponseEntity<>(value, HttpStatus.CREATED)).orElseGet(() -> new ResponseEntity<>(movie, HttpStatus.CONFLICT));
     }
 
     @Operation(summary = "Update a movie")
     @PutMapping(value = "/movie/{mid}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Movie> editMovie(@PathVariable int mid, @RequestBody @Valid Movie movie) {
+    public ResponseEntity<Movie> editMovie(@PathVariable int mid, @RequestBody @Valid MovieRequest movieRequest) {
+        Movie movie = movieRequest.toMovie();
         return movieService.update(mid, movie)
                 .map(ResponseEntity::ok)
                 .orElse(new ResponseEntity<>(movie, HttpStatus.NOT_FOUND));
@@ -98,14 +102,16 @@ public class MovieController {
 
     @Operation(summary = "Create a studio")
     @PostMapping(value = "/studio", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Studio> addStudio(@RequestBody @Valid Studio studio) {
+    public ResponseEntity<Studio> addStudio(@RequestBody @Valid StudioRequest studioRequest) {
+        Studio studio = studioRequest.toStudio();
         Optional<Studio> result = studioService.add(studio);
         return result.map(value -> new ResponseEntity<>(value, HttpStatus.CREATED)).orElseGet(() -> new ResponseEntity<>(studio, HttpStatus.CONFLICT));
     }
 
     @Operation(summary = "Update a studio")
     @PutMapping(value = "/studio/{sid}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Studio> editStudio(@PathVariable int sid, @RequestBody @Valid Studio studio) {
+    public ResponseEntity<Studio> editStudio(@PathVariable int sid, @RequestBody @Valid StudioRequest studioRequest) {
+        Studio studio = studioRequest.toStudio();
         return studioService.update(sid, studio)
                 .map(ResponseEntity::ok)
                 .orElse(new ResponseEntity<>(studio, HttpStatus.NOT_FOUND));

@@ -26,6 +26,7 @@ jobs:
         run: ./mvnw verify sonar:sonar
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Jacoco coverage report
         if: always()
