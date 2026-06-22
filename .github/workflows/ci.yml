@@ -8,7 +8,6 @@ on:
 
 jobs:
   build-and-test:
-    name: Build, test and analyse
     runs-on: ubuntu-latest
 
     steps:
@@ -31,11 +30,14 @@ jobs:
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
-      - name: Build, test and analyse
-        run: ./mvnw verify sonar:sonar
+      - name: Build and test
+        run: ./mvnw verify
+
+      - name: Analyse with SonarCloud
+        if: github.ref == 'refs/heads/main'
+        run: ./mvnw sonar:sonar
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Jacoco coverage report
         if: always()
