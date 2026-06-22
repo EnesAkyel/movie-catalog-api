@@ -14,7 +14,6 @@ A RESTful Spring Boot API for managing a catalog of movies and studios, built as
 | Persistence | PostgreSQL 16, Spring Data JPA, Hibernate 6 |
 | Test Database | H2 (in-memory, auto-configured for all test contexts) |
 | Validation | Jakarta Bean Validation |
-| Persistence | In-memory (List) — PostgreSQL migration planned |
 | API Docs | springdoc-openapi 2.8 (Swagger UI) |
 | Unit/Integration Tests | JUnit 5, Mockito, MockMvc, RestAssured |
 | Coverage | JaCoCo |
@@ -114,7 +113,7 @@ DB_PASSWORD=postgres
 ```
 
 ```bash
-# Start the application (uses in-memory data, no DB required)
+# Start the application
 ./mvnw spring-boot:run
 
 # Run all tests (uses H2 — no PostgreSQL needed)
