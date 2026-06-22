@@ -1,7 +1,7 @@
 package com.moviecatalog.service;
 
 import com.moviecatalog.model.Movie;
-import com.moviecatalog.model.Studio;
+import com.moviecatalog.repository.MovieRepository;
 import com.moviecatalog.util.PageResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,24 +9,44 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class MovieServiceTest {
 
     @Mock
-    private StudioService studioService;
+    private MovieRepository movieRepository;
 
     private MovieService movieService;
 
     @BeforeEach
     void setUp() {
-        when(studioService.getAll()).thenReturn(List.of(new Studio(1, "Test Studio")));
-        movieService = new MovieService(studioService);
+        String[] genres = {"Action", "Romance", "Comedy", "Horror", "Drama",
+                           "Thriller", "Sci-Fi", "Fantasy", "Mystery", "Adventure"};
+        String[] ratings = {"G", "PG", "PG-13", "R", "NC-17"};
+        List<Movie> seeded = new ArrayList<>();
+        for (int i = 0; i < 30; i++) {
+            Movie m = new Movie();
+            m.setMID(1001 + i);
+            m.setName("Movie " + i);
+            m.setGenre(genres[i % genres.length]);
+            m.setPrice((i + 1) * 3.99);
+            m.setRating(ratings[i % ratings.length]);
+            m.setStudio((i % 5) + 1);
+            seeded.add(m);
+        }
+        lenient().when(movieRepository.findAll()).thenReturn(seeded);
+        movieService = new MovieService(movieRepository);
     }
 
     private Movie movie(int mid) {
@@ -95,7 +115,9 @@ class MovieServiceTest {
 
     @Test
     void findById_existingMovie_returnsPresent() {
-        movieService.add(movie(5001));
+        Movie m = movie(5001);
+        when(movieRepository.findById(5001)).thenReturn(Optional.of(m));
+
         Optional<Movie> result = movieService.findById(5001);
         assertTrue(result.isPresent());
         assertEquals(5001, result.get().getMID());
@@ -103,29 +125,37 @@ class MovieServiceTest {
 
     @Test
     void findById_unknownMid_returnsEmpty() {
+        when(movieRepository.findById(1)).thenReturn(Optional.empty());
         Optional<Movie> result = movieService.findById(1);
         assertFalse(result.isPresent());
     }
 
     @Test
     void add_newMovie_returnsPresent() {
-        Optional<Movie> result = movieService.add(movie(5002));
+        Movie m = movie(5002);
+        when(movieRepository.existsById(5002)).thenReturn(false);
+        when(movieRepository.save(m)).thenReturn(m);
+
+        Optional<Movie> result = movieService.add(m);
         assertTrue(result.isPresent());
         assertEquals(5002, result.get().getMID());
     }
 
     @Test
     void add_duplicate_returnsEmpty() {
-        movieService.add(movie(5003));
+        when(movieRepository.existsById(5003)).thenReturn(true);
         Optional<Movie> result = movieService.add(movie(5003));
         assertFalse(result.isPresent());
     }
 
     @Test
     void update_existingMovie_updatesFields() {
-        movieService.add(movie(5004));
+        Movie existing = movie(5004);
         Movie updated = movie(5004);
         updated.setName("New Name");
+        when(movieRepository.findById(5004)).thenReturn(Optional.of(existing));
+        when(movieRepository.save(existing)).thenReturn(existing);
+
         Optional<Movie> result = movieService.update(5004, updated);
         assertTrue(result.isPresent());
         assertEquals("New Name", result.get().getName());
@@ -133,27 +163,33 @@ class MovieServiceTest {
 
     @Test
     void update_unknownMid_returnsEmpty() {
+        when(movieRepository.findById(1)).thenReturn(Optional.empty());
         Optional<Movie> result = movieService.update(1, movie(1));
         assertFalse(result.isPresent());
     }
 
     @Test
     void delete_existingMovie_returnsDeletedMovie() {
-        movieService.add(movie(5005));
+        Movie m = movie(5005);
+        when(movieRepository.findById(5005)).thenReturn(Optional.of(m));
+
         Optional<Movie> result = movieService.delete(5005);
         assertTrue(result.isPresent());
         assertEquals(5005, result.get().getMID());
     }
 
     @Test
-    void delete_existingMovie_removesFromList() {
-        movieService.add(movie(5006));
+    void delete_existingMovie_deletesViaRepository() {
+        Movie m = movie(5006);
+        when(movieRepository.findById(5006)).thenReturn(Optional.of(m));
+
         movieService.delete(5006);
-        assertFalse(movieService.findById(5006).isPresent());
+        verify(movieRepository).delete(m);
     }
 
     @Test
     void delete_unknownMid_returnsEmpty() {
+        when(movieRepository.findById(1)).thenReturn(Optional.empty());
         Optional<Movie> result = movieService.delete(1);
         assertFalse(result.isPresent());
     }
@@ -162,7 +198,8 @@ class MovieServiceTest {
     void findByStudio_returnsMatchingMovies() {
         Movie m = movie(5007);
         m.setStudio(50);
-        movieService.add(m);
+        when(movieRepository.findAll()).thenReturn(List.of(m));
+
         List<Movie> result = movieService.findByStudio(50);
         assertTrue(result.stream().anyMatch(mv -> mv.getMID() == 5007));
     }

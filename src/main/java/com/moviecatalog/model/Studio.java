@@ -1,18 +1,27 @@
 package com.moviecatalog.model;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import org.hibernate.validator.constraints.Range;
 
+@Entity
+@Table(name = "studios")
 public class Studio implements Comparable<Studio> {
+    @Id
+    @Column(name = "sid")
     @NotNull(message = "Studio ID must be present")
     @Digits(integer=3,fraction=0, message = "Studio ID must be an integer with up to 3 digits")
     @Range(min=1,max=100, message = "Studio ID must be between 1 and 100")
     @Positive(message = "Studio ID must be bigger than 0")
     private int sid;
 
+    @Column(name = "name", nullable = false)
     @NotEmpty(message = "Name must have length greater than 0")
     @NotNull(message = "Name must be present")
     private String name;
@@ -51,10 +60,6 @@ public class Studio implements Comparable<Studio> {
 
     public int getSID() {
         return sid;
-    }
-
-    public void setSID(int sid) {
-        this.sid = sid;
     }
 
     public String getName() {

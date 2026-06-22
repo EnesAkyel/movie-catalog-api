@@ -11,13 +11,13 @@ A RESTful Spring Boot API for managing a catalog of movies and studios, built as
 | Layer | Technology |
 |---|---|
 | Runtime | Java 21, Spring Boot 3.5 |
+| Persistence | PostgreSQL 16, Spring Data JPA, Hibernate 6 |
+| Test Database | H2 (in-memory, auto-configured for all test contexts) |
 | Validation | Jakarta Bean Validation |
-| Persistence | In-memory (List) — PostgreSQL migration planned |
 | API Docs | springdoc-openapi 2.8 (Swagger UI) |
-| Unit Tests | JUnit 5, Mockito (`@MockitoBean`) |
-| Integration Tests | JUnit 5, RestAssured, `@SpringBootTest` |
+| Unit/Integration Tests | JUnit 5, Mockito, MockMvc, RestAssured |
 | Coverage | JaCoCo |
-| Static Analysis | SonarCloud |
+| Containerisation | Docker, Docker Compose |
 | CI | GitHub Actions |
 
 ---
@@ -79,39 +79,44 @@ Interactive docs available via Swagger UI after starting the app:
 
 ---
 
-## Test Strategy
-
-The project uses three complementary test layers.
-
-### Controller Tests — `MovieControllerTest`
-`@WebMvcTest` with MockMvc and `@MockitoBean` services. Loads only the web layer for fast, isolated tests. Covers:
-- Happy path for every endpoint
-- Validation rejection (invalid field values, missing required fields)
-- Boundary conditions via `@ParameterizedTest` (ID range edges, invalid enum values)
-- Correct HTTP status codes per scenario (201, 200, 404, 409, 400)
-
-### Service Tests — `MovieServiceTest`, `StudioServiceTest`
-`@ExtendWith(MockitoExtension.class)` pure unit tests. Verify business logic in isolation:
-- CRUD operations and duplicate detection
-- Filtering and pagination math
-- Not-found handling
-
-### Integration Tests — `MovieIntegrationTest`
-`@SpringBootTest(webEnvironment = RANDOM_PORT)` with RestAssured against a live embedded server. Covers an ordered CRUD lifecycle:
-1. Create studio → create movie → GET by ID → PUT update → GET by studio → GET all → DELETE → verify 404
-2. Validation rejection (invalid MID, invalid genre)
-
----
-
 ## Running Locally
 
-**Prerequisites:** Java 21, Maven (or use the included `./mvnw` wrapper)
+### With Docker (recommended)
+
+**Prerequisites:** Docker Desktop
 
 ```bash
-# Start the application (uses in-memory data, no DB required)
+# Build images and start API + PostgreSQL
+docker compose up --build
+
+# Stop containers (data persists in the pgdata volume)
+docker compose down
+
+# Stop and remove all data
+docker compose down -v
+```
+
+The API is available at `http://localhost:8080`. On first startup, `DataInitializer` seeds 5 studios and 30 movies automatically. The seed is idempotent. Restarting the containers will not duplicate data.
+
+### Without Docker
+
+**Prerequisites:** Java 21, Maven (or use the included `./mvnw` wrapper), a running PostgreSQL instance
+
+Set the following environment variables (defaults shown):
+
+```
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=moviecatalog
+DB_USER=postgres
+DB_PASSWORD=postgres
+```
+
+```bash
+# Start the application
 ./mvnw spring-boot:run
 
-# Run all tests
+# Run all tests (uses H2 — no PostgreSQL needed)
 ./mvnw test
 
 # Run tests + generate JaCoCo coverage report
@@ -121,32 +126,42 @@ The project uses three complementary test layers.
 
 ---
 
+## Test Strategy
+
+The project uses two complementary test layers.
+
+### Controller Tests — `MovieControllerTest` (35 tests)
+`@WebMvcTest` with MockMvc. Spins up only the web layer (no full application context) for fast, focused tests. Covers:
+- Happy path for every endpoint
+- Validation rejection (invalid field values, missing required fields)
+- Boundary conditions via `@ParameterizedTest` (ID range edges, invalid enum values)
+- Correct HTTP status codes per scenario (201, 200, 302, 404, 409, 422)
+
+### Service Tests — `MovieServiceTest` / `StudioServiceTest` (29 tests)
+`@ExtendWith(MockitoExtension.class)` with mocked repositories. Pure unit tests — no Spring context, no database. Covers all CRUD operations and filtering logic.
+
+### Integration Tests — `MovieIntegrationTest` (15 tests)
+`@SpringBootTest(webEnvironment = RANDOM_PORT)` with RestAssured against a live embedded server backed by H2. Covers an ordered CRUD lifecycle:
+1. Create studio → create movie → GET by ID → PUT update → GET by studio → GET all → DELETE → verify 404
+
+All test contexts use H2 via `src/test/resources/application.properties` — no PostgreSQL or Docker required to run the test suite.
+
+---
+
 ## CI Pipeline
 
 Every push to `main` and every pull request triggers the GitHub Actions workflow (`.github/workflows/ci.yml`):
 
 1. Check out code
 2. Set up Java 21 (Temurin)
-3. Run `./mvnw test`
+3. Run `./mvnw verify sonar:sonar` (tests + JaCoCo + SonarCloud analysis)
 4. Upload JaCoCo report as a build artifact (retained 14 days)
+5. Validate `docker-compose.yml` syntax
 
 ---
 
 ## What's Next
 
-The project is being extended in phases.
-
-**Phase 1 — PostgreSQL**
-Swap the in-memory `List<>` store for a real PostgreSQL database using Spring Data JPA. Tests will continue to run against H2 in-memory. No database required to run the test suite.
-
-**Phase 2 — Docker**
-Add a `Dockerfile` (multi-stage Maven → JRE 21 build) and a `docker-compose.yml` that runs the API and PostgreSQL together with a named volume for data persistence. One command to run the whole stack locally.
-
-**Phase 3 — Test Quality**
-Fix integration test isolation (currently tests are order-dependent), add missing edge-case coverage, add a JaCoCo minimum coverage gate, and switch CI from `test` to `verify`.
-
-**Phase 4 — Load Testing (Gatling)**
-Add a Gatling simulation with ramp-up load and response-time assertions wired into CI.
-
-**Phase 5 — Contract Testing (Pact)**
-Consumer-driven contract tests for the key API shapes, with provider verification in CI.
+- **Phase 3 — Test Quality:** integration test isolation, missing edge cases, JaCoCo coverage gate
+- **Phase 4 — Load Testing:** Gatling simulations for baseline performance
+- **Phase 5 — Contract Testing:** Pact consumer/provider tests

@@ -1,45 +1,26 @@
 package com.moviecatalog.service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
-
 import com.moviecatalog.model.Movie;
-import com.moviecatalog.model.Studio;
+import com.moviecatalog.repository.MovieRepository;
 import com.moviecatalog.util.PageResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Optional;
+
 @Service
 public class MovieService {
     private static final Logger logger = LoggerFactory.getLogger(MovieService.class);
-    private final List<Movie> movies = new ArrayList<>();
+    private final MovieRepository movieRepository;
 
-    public MovieService(StudioService studioService) {
-        Random random = new Random();
-        String[] genres = {"Action", "Romance", "Comedy", "Horror", "Drama",
-                           "Thriller", "Sci-Fi", "Fantasy", "Mystery", "Adventure"};
-        String[] ratings = {"G", "PG", "PG-13", "R", "NC-17"};
-        String[] movieNames = {"Inception", "The Matrix", "Interstellar", "Pulp Fiction", "The Godfather",
-                               "Forrest Gump", "Fight Club", "The Dark Knight", "Gladiator", "Shutter Island"};
-
-        List<Studio> studios = studioService.getAll();
-        for (int i = 0; i < 30; i++) {
-            Movie movie = new Movie();
-            movie.setMID(random.nextInt(1000, 9999));
-            movie.setName(movieNames[random.nextInt(movieNames.length)]);
-            movie.setGenre(genres[random.nextInt(genres.length)]);
-            movie.setPrice(random.nextInt(0, 99) + 0.99);
-            movie.setRating(ratings[random.nextInt(ratings.length)]);
-            movie.setStudio(studios.get(random.nextInt(studios.size())).getSID());
-            movies.add(movie);
-        }
+    public MovieService(MovieRepository movieRepository) {
+        this.movieRepository = movieRepository;
     }
 
     public PageResponse<Movie> getMovies(String genre, String rating, Double minPrice, Double maxPrice, int page, int size) {
-        List<Movie> filtered = movies.stream()
+        List<Movie> filtered = movieRepository.findAll().stream()
                 .filter(m -> genre == null || m.getGenre().equals(genre))
                 .filter(m -> rating == null || m.getRating().equals(rating))
                 .filter(m -> minPrice == null || m.getPrice() >= minPrice)
@@ -53,50 +34,50 @@ public class MovieService {
     }
 
     public Optional<Movie> findById(int mid) {
-        return movies.stream().filter(m -> m.getMID() == mid).findFirst();
+        return movieRepository.findById(mid);
     }
 
     public Optional<Movie> add(Movie movie) {
-        if (movies.contains(movie)) {
+        if (movieRepository.existsById(movie.getMID())) {
             logger.warn("Movie with MID {} already exists", movie.getMID());
             return Optional.empty();
         }
-        movies.add(movie);
         logger.info("Movie created: MID={}", movie.getMID());
-        return Optional.of(movie);
+        return Optional.of(movieRepository.save(movie));
     }
 
     public Optional<Movie> update(int mid, Movie movie) {
         movie.setMID(mid);
-        if (!movies.contains(movie)) {
+        Optional<Movie> found = movieRepository.findById(mid);
+        if (found.isEmpty()) {
             logger.warn("Movie not found for update: MID={}", mid);
             return Optional.empty();
         }
-        Movie existing = movies.get(movies.indexOf(movie));
-        existing.setMID(mid);
+        Movie existing = found.get();
         existing.setName(movie.getName());
         existing.setGenre(movie.getGenre());
         existing.setPrice(movie.getPrice());
         existing.setRating(movie.getRating());
         existing.setStudio(movie.getStudio());
         logger.info("Movie updated: MID={}", mid);
-        return Optional.of(existing);
+        return Optional.of(movieRepository.save(existing));
     }
 
     public Optional<Movie> delete(int mid) {
-        Movie temp = new Movie();
-        temp.setMID(mid);
-        if (!movies.contains(temp)) {
+        Optional<Movie> found = movieRepository.findById(mid);
+        if (found.isEmpty()) {
             logger.warn("Movie not found for deletion: MID={}", mid);
             return Optional.empty();
         }
-        Movie movie = movies.get(movies.indexOf(temp));
-        movies.remove(movie);
+        Movie movie = found.get();
+        movieRepository.delete(movie);
         logger.info("Movie deleted: MID={}", mid);
         return Optional.of(movie);
     }
 
     public List<Movie> findByStudio(int sid) {
-        return movies.stream().filter(m -> m.getStudio() == sid).toList();
+        return movieRepository.findAll().stream()
+                .filter(m -> m.getStudio() == sid)
+                .toList();
     }
 }

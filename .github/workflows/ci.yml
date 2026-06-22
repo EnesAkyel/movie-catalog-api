@@ -34,3 +34,6 @@ jobs:
           name: jacoco-report
           path: target/site/jacoco/
           retention-days: 14
+
+      - name: Validate docker-compose.yml
+        run: docker compose config --quiet
