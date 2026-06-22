@@ -1,72 +1,65 @@
 package com.moviecatalog.service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
-
 import com.moviecatalog.model.Studio;
+import com.moviecatalog.repository.StudioRepository;
 import com.moviecatalog.util.PageResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Optional;
+
 @Service
 public class StudioService {
     private static final Logger logger = LoggerFactory.getLogger(StudioService.class);
-    private final List<Studio> studios = new ArrayList<>();
+    private final StudioRepository studioRepository;
 
-    public StudioService() {
-        Random random = new Random();
-        String[] studioNames = {"Paramount", "Warner Bros", "Universal", "20th Century", "Miramax"};
-        for (int i = 0; i < 5; i++) {
-            studios.add(new Studio(random.nextInt(1, 100), studioNames[i]));
-        }
+    public StudioService(StudioRepository studioRepository) {
+        this.studioRepository = studioRepository;
     }
 
     public List<Studio> getAll() {
-        return List.copyOf(studios);
+        return studioRepository.findAll();
     }
 
     public PageResponse<Studio> getStudios(int page, int size) {
+        List<Studio> all = studioRepository.findAll();
         int fromIndex = page * size;
-        int toIndex = Math.min(fromIndex + size, studios.size());
-        List<Studio> content = fromIndex >= studios.size() ? List.of() : studios.subList(fromIndex, toIndex);
-        return new PageResponse<>(content, page, size, studios.size());
+        int toIndex = Math.min(fromIndex + size, all.size());
+        List<Studio> content = fromIndex >= all.size() ? List.of() : all.subList(fromIndex, toIndex);
+        return new PageResponse<>(content, page, size, all.size());
     }
 
     public Optional<Studio> add(Studio studio) {
-        if (studios.contains(studio)) {
+        if (studioRepository.existsById(studio.getSID())) {
             logger.warn("Studio with SID {} already exists", studio.getSID());
             return Optional.empty();
         }
-        studios.add(studio);
         logger.info("Studio created: SID={}", studio.getSID());
-        return Optional.of(studio);
+        return Optional.of(studioRepository.save(studio));
     }
 
     public Optional<Studio> update(int sid, Studio studio) {
-        studio.setSID(sid);
-        if (!studios.contains(studio)) {
+        Optional<Studio> found = studioRepository.findById(sid);
+        if (found.isEmpty()) {
             logger.warn("Studio not found for update: SID={}", sid);
             return Optional.empty();
         }
-        Studio existing = studios.get(studios.indexOf(studio));
-        existing.setSID(sid);
+        Studio existing = found.get();
         existing.setName(studio.getName());
         logger.info("Studio updated: SID={}", sid);
-        return Optional.of(existing);
+        return Optional.of(studioRepository.save(existing));
     }
 
     public Optional<Studio> delete(int sid) {
-        Studio temp = new Studio();
-        temp.setSID(sid);
-        if (!studios.contains(temp)) {
+        Optional<Studio> found = studioRepository.findById(sid);
+        if (found.isEmpty()) {
             logger.warn("Studio not found for deletion: SID={}", sid);
             return Optional.empty();
         }
-        Studio studio = studios.get(studios.indexOf(temp));
-        studios.remove(studio);
+        Studio studio = found.get();
+        studioRepository.delete(studio);
         logger.info("Studio deleted: SID={}", sid);
         return Optional.of(studio);
     }

@@ -1,3 +1,7 @@
+### Environment / secrets ###
+.env
+.env.*
+
 ### Maven ###
 target/
 .mvn/wrapper/maven-wrapper.jar
