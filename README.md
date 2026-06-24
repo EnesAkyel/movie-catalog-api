@@ -198,7 +198,9 @@ npm run test:regression:local
 Every push to `main` and every pull request triggers the GitHub Actions workflow (`.github/workflows/ci.yml`):
 
 ```
-build-and-test → api-tests → gatling (main only)
+build-and-test ┐
+api-tests       ├─ (parallel)
+gatling ────────┘  (main only)
 ```
 
 **`build-and-test`**
