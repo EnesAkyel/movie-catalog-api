@@ -35,10 +35,9 @@ src/main/java/com/moviecatalog/
 ├── service/         # MovieService, StudioService — business logic
 └── util/            # PageResponse — generic paginated response wrapper
 
-src/test/java/com/moviecatalog/   # JUnit tests (unit, controller, integration)
-
-src/gatling/java/
-├── config/                   # Config.java — base URL, user counts, thresholds
+src/test/java/
+├── com/moviecatalog/         # JUnit tests (unit, controller, integration)
+├── config/                   # Config.java — Gatling base URL, user counts, thresholds
 ├── scenarios/                # PostScenarios.java — reusable Gatling scenarios
 └── simulations/              # BasicSimulation, LoadSimulation, StressSimulation,
                               # SoakSimulation, SpikeSimulation
