@@ -1,11 +1,13 @@
 package com.moviecatalog.util;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@DisplayName("PageResponse Tests")
 class PageResponseTest {
 
     @Test

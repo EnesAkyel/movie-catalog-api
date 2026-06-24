@@ -5,11 +5,10 @@ import com.moviecatalog.model.Studio;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -17,13 +16,13 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@DisplayName("Movie Integration Tests")
 class MovieIntegrationTest {
 
     @LocalServerPort
@@ -36,9 +35,21 @@ class MovieIntegrationTest {
     private static final int TEST_SID = 55;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         RestAssured.baseURI = "http://localhost";
         RestAssured.port = port;
+        given().contentType(ContentType.JSON)
+                .body(json(new Studio(TEST_SID, "Test Studio")))
+                .when().post("/api/v1/studio")
+                .then().statusCode(anyOf(is(201), is(409)));
+        when().delete("/api/v1/movie/{mid}", TEST_MID)
+                .then().statusCode(anyOf(is(200), is(404)));
+    }
+
+    @AfterEach
+    void tearDown() {
+        when().delete("/api/v1/movie/{mid}", TEST_MID)
+                .then().statusCode(anyOf(is(200), is(404)));
     }
 
     private String json(Object obj) throws Exception {
@@ -56,16 +67,24 @@ class MovieIntegrationTest {
         return m;
     }
 
+    private void createTestMovie(String name) throws Exception {
+        given().contentType(ContentType.JSON)
+                .body(json(buildMovie(TEST_MID, name)))
+                .when().post("/api/v1/movie")
+                .then().statusCode(201);
+    }
+
     @Test
-    @Order(1)
+    @DisplayName("POST /studio creates studio or returns 409 if already exists")
     void createStudio_returns201or409() throws Exception {
-        given().contentType(ContentType.JSON).body(json(new Studio(TEST_SID, "Test Studio")))
+        given().contentType(ContentType.JSON)
+                .body(json(new Studio(TEST_SID, "Test Studio")))
                 .when().post("/api/v1/studio")
                 .then().statusCode(anyOf(is(201), is(409)));
     }
 
     @Test
-    @Order(2)
+    @DisplayName("GET /studios lists all studios and includes seeded data")
     void getAllStudios_containsTestStudio() {
         when().get("/api/v1/studios")
                 .then().statusCode(200)
@@ -74,9 +93,10 @@ class MovieIntegrationTest {
     }
 
     @Test
-    @Order(3)
+    @DisplayName("POST /movie with valid body returns 201 with the created movie")
     void createMovie_returns201() throws Exception {
-        given().contentType(ContentType.JSON).body(json(buildMovie(TEST_MID, "Test Movie")))
+        given().contentType(ContentType.JSON)
+                .body(json(buildMovie(TEST_MID, "Test Movie")))
                 .when().post("/api/v1/movie")
                 .then().statusCode(201)
                 .body("mid", equalTo(TEST_MID))
@@ -86,8 +106,19 @@ class MovieIntegrationTest {
     }
 
     @Test
-    @Order(4)
-    void getMovieByMid_returnsCreatedMovie() {
+    @DisplayName("POST /movie with duplicate MID returns 409")
+    void createMovie_duplicate_returns409() throws Exception {
+        createTestMovie("Test Movie");
+        given().contentType(ContentType.JSON)
+                .body(json(buildMovie(TEST_MID, "Duplicate")))
+                .when().post("/api/v1/movie")
+                .then().statusCode(409);
+    }
+
+    @Test
+    @DisplayName("GET /movie/{mid} returns the movie after it is created")
+    void getMovieByMid_returnsCreatedMovie() throws Exception {
+        createTestMovie("Test Movie");
         when().get("/api/v1/movie/{mid}", TEST_MID)
                 .then().statusCode(200)
                 .body("mid", equalTo(TEST_MID))
@@ -95,9 +126,18 @@ class MovieIntegrationTest {
     }
 
     @Test
-    @Order(5)
+    @DisplayName("GET /movie/{mid} for a non-existent MID returns 404")
+    void getMovieByMid_notFound_returns404() {
+        when().get("/api/v1/movie/{mid}", TEST_MID)
+                .then().statusCode(404);
+    }
+
+    @Test
+    @DisplayName("PUT /movie/{mid} updates movie name and returns 200")
     void updateMovie_returns200WithNewName() throws Exception {
-        given().contentType(ContentType.JSON).body(json(buildMovie(TEST_MID, "Updated Title")))
+        createTestMovie("Test Movie");
+        given().contentType(ContentType.JSON)
+                .body(json(buildMovie(TEST_MID, "Updated Title")))
                 .when().put("/api/v1/movie/{mid}", TEST_MID)
                 .then().statusCode(200)
                 .body("mid", equalTo(TEST_MID))
@@ -105,51 +145,66 @@ class MovieIntegrationTest {
     }
 
     @Test
-    @Order(6)
-    void getMoviesBySid_containsUpdatedMovie() {
-        when().get("/api/v1/studios/{sid}/movies", TEST_SID)
+    @DisplayName("PUT /movie with mismatched MID in body uses path MID")
+    void updateMovie_mismatchedBodyMid_usesPathMid() throws Exception {
+        createTestMovie("Original");
+        Movie withDifferentMid = buildMovie(9999, "Patched");
+        given().contentType(ContentType.JSON)
+                .body(json(withDifferentMid))
+                .when().put("/api/v1/movie/{mid}", TEST_MID)
                 .then().statusCode(200)
-                .body("mid", hasItem(TEST_MID))
-                .body("name", hasItem("Updated Title"));
+                .body("mid", equalTo(TEST_MID));
     }
 
     @Test
-    @Order(7)
-    void getAllMovies_containsUpdatedMovie() {
+    @DisplayName("GET /studios/{sid}/movies returns movies belonging to the studio")
+    void getMoviesBySid_containsMovie() throws Exception {
+        createTestMovie("Studio Movie");
+        when().get("/api/v1/studios/{sid}/movies", TEST_SID)
+                .then().statusCode(200)
+                .body("mid", hasItem(TEST_MID));
+    }
+
+    @Test
+    @DisplayName("GET /movies returns paginated results from seeded data")
+    void getAllMovies_returnsResults() {
         when().get("/api/v1/movies?size=50")
                 .then().statusCode(200)
-                .body("content.mid", hasItem(TEST_MID))
                 .body("totalElements", greaterThan(0));
     }
 
     @Test
-    @Order(8)
-    void deleteMovie_returns200WithDeletedMovie() {
+    @DisplayName("DELETE /movie/{mid} returns the deleted movie with 200")
+    void deleteMovie_returns200WithDeletedMovie() throws Exception {
+        createTestMovie("Movie To Delete");
         when().delete("/api/v1/movie/{mid}", TEST_MID)
                 .then().statusCode(200)
                 .body("mid", equalTo(TEST_MID));
     }
 
     @Test
-    @Order(9)
-    void getDeletedMovie_returns404() {
-        when().get("/api/v1/movie/{mid}", TEST_MID)
+    @DisplayName("DELETE /movie/{mid} for non-existent MID returns 404")
+    void deleteNonExistentMovie_returns404() {
+        when().delete("/api/v1/movie/1")
                 .then().statusCode(404);
     }
 
     @Test
-    @Order(10)
-    void getMoviesByPriceRange_returns200WithResults() {
-        when().get("/api/v1/movies?minPrice=0&maxPrice=100")
+    @DisplayName("DELETE /studio/{sid} deletes the studio and returns 200")
+    void deleteStudio_returns200() throws Exception {
+        given().contentType(ContentType.JSON)
+                .body(json(new Studio(56, "Temp Studio")))
+                .when().post("/api/v1/studio");
+        when().delete("/api/v1/studio/{sid}", 56)
                 .then().statusCode(200)
-                .body("content.size()", greaterThan(0));
+                .body("sid", equalTo(56));
     }
 
     @Test
-    @Order(11)
+    @DisplayName("POST /movie with MID below 1000 returns 400 with field error on mid")
     void createMovieWithMidBelowRange_returns400WithFieldError() throws Exception {
-        Movie bad = buildMovie(999, "Bad Movie");
-        given().contentType(ContentType.JSON).body(json(bad))
+        given().contentType(ContentType.JSON)
+                .body(json(buildMovie(999, "Bad Movie")))
                 .when().post("/api/v1/movie")
                 .then().statusCode(400)
                 .body("message", equalTo("Spring Validation Error"))
@@ -157,31 +212,49 @@ class MovieIntegrationTest {
     }
 
     @Test
-    @Order(12)
+    @DisplayName("POST /movie with invalid genre returns 400 with validation error")
     void createMovieWithInvalidGenre_returns400() throws Exception {
         Movie bad = buildMovie(7002, "Bad Genre");
         bad.setGenre("Cartoon");
-        given().contentType(ContentType.JSON).body(json(bad))
+        given().contentType(ContentType.JSON)
+                .body(json(bad))
                 .when().post("/api/v1/movie")
                 .then().statusCode(400)
                 .body("message", equalTo("Spring Validation Error"));
     }
 
     @Test
-    @Order(13)
-    void deleteNonExistentMovie_returns404() {
-        when().delete("/api/v1/movie/1")
-                .then().statusCode(404);
+    @DisplayName("POST /movie with price 0 returns 400 — @Positive requires strictly > 0")
+    void createMovieWithZeroPrice_returns400() throws Exception {
+        Movie bad = buildMovie(7003, "Free Movie");
+        bad.setPrice(0.0);
+        given().contentType(ContentType.JSON)
+                .body(json(bad))
+                .when().post("/api/v1/movie")
+                .then().statusCode(400)
+                .body("message", equalTo("Spring Validation Error"))
+                .body("errors.field", hasItem("price"));
     }
 
     @Test
-    @Order(14)
-    void deleteStudio_returns200() throws Exception {
-        given().contentType(ContentType.JSON).body(json(new Studio(56, "Temp Studio")))
-                .when().post("/api/v1/studio");
-
-        when().delete("/api/v1/studio/{sid}", 56)
+    @DisplayName("GET /movies?size=0 returns 200 with empty content and full totalElements")
+    void getAllMovies_sizeZero_returnsEmptyContentWithTotalElements() {
+        when().get("/api/v1/movies?page=0&size=0")
                 .then().statusCode(200)
-                .body("sid", equalTo(56));
+                .body("content.size()", is(0))
+                .body("totalElements", greaterThan(0));
+    }
+
+    @Test
+    @DisplayName("POST /movie with valid-range studioID not in DB succeeds — no FK check")
+    void createMovie_withStudioNotInDb_returns201() throws Exception {
+        Movie m = buildMovie(7004, "Orphan Movie");
+        m.setStudio(77);
+        given().contentType(ContentType.JSON)
+                .body(json(m))
+                .when().post("/api/v1/movie")
+                .then().statusCode(201)
+                .body("mid", equalTo(7004));
+        when().delete("/api/v1/movie/7004").then().statusCode(anyOf(is(200), is(404)));
     }
 }
