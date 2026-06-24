@@ -6,6 +6,7 @@ import com.moviecatalog.service.MovieService;
 import com.moviecatalog.service.StudioService;
 import com.moviecatalog.util.PageResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -33,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(MovieController.class)
+@DisplayName("MovieController Tests")
 class MovieControllerTest {
 
     @Autowired
@@ -73,8 +75,6 @@ class MovieControllerTest {
     private PageResponse<Studio> studioPage(Studio... studios) {
         return new PageResponse<>(List.of(studios), 0, 10, studios.length);
     }
-
-    // --- Movie GET ---
 
     @Test
     void getAllMovies_returns200WithPaginatedList() throws Exception {
@@ -187,8 +187,6 @@ class MovieControllerTest {
                 .andExpect(status().isNotFound());
     }
 
-    // --- Movie POST ---
-
     @Test
     void addMovie_validInput_returns201() throws Exception {
         Movie movie = validMovie(9992);
@@ -286,7 +284,16 @@ class MovieControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // --- Movie PUT / DELETE ---
+    @Test
+    void addMovie_priceZero_returns400() throws Exception {
+        Movie movie = validMovie(9998);
+        movie.setPrice(0.0);
+        mockMvc.perform(post("/api/v1/movie")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(movie)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field", is("price")));
+    }
 
     @Test
     void editMovie_existing_returns200WithUpdatedName() throws Exception {
@@ -312,6 +319,18 @@ class MovieControllerTest {
     }
 
     @Test
+    void editMovie_mismatchedMidInBody_usesPathMid() throws Exception {
+        Movie returned = validMovie(9985);
+        when(movieService.update(eq(9985), any())).thenReturn(Optional.of(returned));
+
+        mockMvc.perform(put("/api/v1/movie/9985")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(validMovie(1111))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mid", is(9985)));
+    }
+
+    @Test
     void deleteMovie_existing_returns200() throws Exception {
         when(movieService.delete(9986)).thenReturn(Optional.of(validMovie(9986)));
 
@@ -327,8 +346,6 @@ class MovieControllerTest {
         mockMvc.perform(delete("/api/v1/movie/1"))
                 .andExpect(status().isNotFound());
     }
-
-    // --- Studio GET ---
 
     @Test
     void getAllStudios_returns200WithPaginatedList() throws Exception {
@@ -369,8 +386,6 @@ class MovieControllerTest {
         mockMvc.perform(get("/api/v1/studios/200/movies"))
                 .andExpect(status().isNotFound());
     }
-
-    // --- Studio POST / PUT / DELETE ---
 
     @Test
     void addStudio_validInput_returns201() throws Exception {

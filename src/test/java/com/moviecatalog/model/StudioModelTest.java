@@ -1,5 +1,6 @@
 package com.moviecatalog.model;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -10,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@DisplayName("Studio Model Tests")
 class StudioModelTest {
 
     private Studio studio(int sid) {
