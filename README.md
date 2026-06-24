@@ -18,6 +18,8 @@ A RESTful Spring Boot API for managing a catalog of movies and studios, built as
 | Unit/Integration Tests | JUnit 5, Mockito, MockMvc, RestAssured |
 | Coverage | JaCoCo |
 | Containerisation | Docker, Docker Compose |
+| API Test Suite | TypeScript, Jest, Axios, AJV ([api-testing-ts](https://github.com/EnesAkyel/api-testing-ts)) |
+| Load Testing | Gatling (Java API), Maven Gatling Plugin |
 | CI | GitHub Actions |
 
 ---
@@ -32,6 +34,14 @@ src/main/java/com/moviecatalog/
 ├── model/           # Movie, Studio — validated domain models
 ├── service/         # MovieService, StudioService — business logic
 └── util/            # PageResponse — generic paginated response wrapper
+
+src/test/java/com/moviecatalog/   # JUnit tests (unit, controller, integration)
+
+src/gatling/java/
+├── config/                   # Config.java — base URL, user counts, thresholds
+├── scenarios/                # PostScenarios.java — reusable Gatling scenarios
+└── simulations/              # BasicSimulation, LoadSimulation, StressSimulation,
+                              # SoakSimulation, SpikeSimulation
 ```
 
 ---
@@ -146,22 +156,78 @@ The project uses two complementary test layers.
 
 All test contexts use H2 via `src/test/resources/application.properties` — no PostgreSQL or Docker required to run the test suite.
 
+### Load Tests — Gatling
+Five simulations covering different load profiles, all built on shared scenarios in `PostScenarios.java`. Requires the API to be running via Docker Compose.
+
+| Simulation | Profile |
+|------------|---------|
+| `BasicSimulation` | 1 user per scenario — sanity check for all endpoints |
+| `LoadSimulation` | Ramp 5 users → sustain 10/s for 60s → ramp down |
+| `StressSimulation` | Progressive spikes: 10 → 20 → 30 → 40 → 50 users |
+| `SoakSimulation` | 10 users sustained for 5 minutes — detects memory leaks |
+| `SpikeSimulation` | Baseline 5/s → sudden burst of 50 → baseline → burst of 100 |
+
+```bash
+# Run BasicSimulation (after docker compose up)
+./mvnw gatling:test -Dgatling.simulationClass=simulations.BasicSimulation
+# Reports: target/gatling/
+```
+
+### API Tests — [api-testing-ts](https://github.com/EnesAkyel/api-testing-ts)
+A separate TypeScript framework that targets the running API over HTTP. Requires the API to be started via Docker Compose first.
+
+| Suite | What it covers |
+|-------|----------------|
+| Smoke | Endpoints return 200, seeded data is accessible |
+| Contract | AJV schema validation — response shapes match declared types |
+| Integration | Full CRUD lifecycle, error cases, response time assertions |
+| Regression | Collection integrity and individual retrieval against seeded data (MIDs 1001–1030) |
+
+```bash
+# From the api-testing-ts repo (after docker compose up in this repo)
+npm run test:smoke
+npm run test:contract
+npm run test:integration
+npm run test:regression:local
+```
+
 ---
 
 ## CI Pipeline
 
 Every push to `main` and every pull request triggers the GitHub Actions workflow (`.github/workflows/ci.yml`):
 
+```
+build-and-test ┐
+api-tests       ├─ (parallel)
+gatling ────────┘  (main only)
+```
+
+**`build-and-test`**
 1. Check out code
 2. Set up Java 21 (Temurin)
-3. Run `./mvnw verify sonar:sonar` (tests + JaCoCo + SonarCloud analysis)
-4. Upload JaCoCo report as a build artifact (retained 14 days)
-5. Validate `docker-compose.yml` syntax
+3. Run `./mvnw verify` — unit, controller, and integration tests + JaCoCo
+4. Run `./mvnw sonar:sonar` — SonarCloud analysis (main only)
+5. Upload JaCoCo report as a build artifact (retained 14 days)
+6. Validate `docker-compose.yml` syntax
+
+**`api-tests`** (runs after `build-and-test` passes)
+1. Start the API via `docker compose up --build`
+2. Wait for `GET /api/v1/movies` to return 200
+3. Check out [api-testing-ts](https://github.com/EnesAkyel/api-testing-ts)
+4. Run smoke → contract → integration test suites
+5. Upload HTML + JUnit reports as artifacts (retained 14 days)
+6. Publish JUnit results to the PR checks panel via `dorny/test-reporter`
+
+**`gatling`** (runs after `api-tests` passes, main only)
+1. Start the API via `docker compose up --build`
+2. Wait for API to be ready
+3. Run `BasicSimulation` via `./mvnw gatling:test`
+4. Upload Gatling HTML report as artifact (retained 30 days)
 
 ---
 
 ## What's Next
 
-- **Phase 3 — Test Quality:** integration test isolation, missing edge cases, JaCoCo coverage gate
-- **Phase 4 — Load Testing:** Gatling simulations for baseline performance
-- **Phase 5 — Contract Testing:** Pact consumer/provider tests
+- **Java test quality:** integration test isolation, missing edge cases, JaCoCo coverage gate
+- **TypeScript test gaps:** validation error body assertions, minPrice filter, studio-not-found edge case
