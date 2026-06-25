@@ -1,0 +1,25 @@
+name: Start movie-catalog-api
+description: Build the Docker image, start the API, and wait until it is healthy.
+
+runs:
+  using: composite
+  steps:
+    - name: Start movie-catalog-api
+      shell: bash
+      run: docker compose up -d --build
+
+    - name: Wait for API to be ready
+      shell: bash
+      run: |
+        echo "Waiting for API..."
+        for i in $(seq 1 30); do
+          if curl -sf http://localhost:8080/api/v1/movies > /dev/null; then
+            echo "API is ready after $((i * 5))s"
+            exit 0
+          fi
+          echo "Attempt $i/30 — retrying in 5s..."
+          sleep 5
+        done
+        echo "API did not become ready in time"
+        docker compose logs --tail=100
+        exit 1

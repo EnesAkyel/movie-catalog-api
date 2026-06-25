@@ -5,8 +5,13 @@ import com.moviecatalog.repository.MovieRepository;
 import com.moviecatalog.util.PageResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,17 +25,21 @@ public class MovieService {
     }
 
     public PageResponse<Movie> getMovies(String genre, String rating, Double minPrice, Double maxPrice, int page, int size) {
-        List<Movie> filtered = movieRepository.findAll().stream()
-                .filter(m -> genre == null || m.getGenre().equals(genre))
-                .filter(m -> rating == null || m.getRating().equals(rating))
-                .filter(m -> minPrice == null || m.getPrice() >= minPrice)
-                .filter(m -> maxPrice == null || m.getPrice() <= maxPrice)
-                .toList();
+        Specification<Movie> spec = (root, q, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (genre != null)    predicates.add(cb.equal(root.get("genre"), genre));
+            if (rating != null)   predicates.add(cb.equal(root.get("rating"), rating));
+            if (minPrice != null) predicates.add(cb.greaterThanOrEqualTo(root.get("price"), minPrice));
+            if (maxPrice != null) predicates.add(cb.lessThanOrEqualTo(root.get("price"), maxPrice));
+            return cb.and(predicates.toArray(Predicate[]::new));
+        };
 
-        int fromIndex = page * size;
-        int toIndex = Math.min(fromIndex + size, filtered.size());
-        List<Movie> content = fromIndex >= filtered.size() ? List.of() : filtered.subList(fromIndex, toIndex);
-        return new PageResponse<>(content, page, size, filtered.size());
+        if (size <= 0) {
+            return new PageResponse<>(List.of(), page, 0, movieRepository.count(spec));
+        }
+
+        Page<Movie> result = movieRepository.findAll(spec, PageRequest.of(page, size));
+        return new PageResponse<>(result.getContent(), page, size, result.getTotalElements());
     }
 
     public Optional<Movie> findById(int mid) {
@@ -76,8 +85,6 @@ public class MovieService {
     }
 
     public List<Movie> findByStudio(int sid) {
-        return movieRepository.findAll().stream()
-                .filter(m -> m.getStudio() == sid)
-                .toList();
+        return movieRepository.findByStudioID(sid);
     }
 }
