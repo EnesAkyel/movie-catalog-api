@@ -7,17 +7,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,22 +37,9 @@ class MovieServiceTest {
 
     @BeforeEach
     void setUp() {
-        String[] genres = {"Action", "Romance", "Comedy", "Horror", "Drama",
-                           "Thriller", "Sci-Fi", "Fantasy", "Mystery", "Adventure"};
-        String[] ratings = {"G", "PG", "PG-13", "R", "NC-17"};
-        List<Movie> seeded = new ArrayList<>();
-        for (int i = 0; i < 30; i++) {
-            Movie m = new Movie();
-            m.setMID(1001 + i);
-            m.setName("Movie " + i);
-            m.setGenre(genres[i % genres.length]);
-            m.setPrice((i + 1) * 3.99);
-            m.setRating(ratings[i % ratings.length]);
-            m.setStudio((i % 5) + 1);
-            seeded.add(m);
-        }
-        lenient().when(movieRepository.findAll()).thenReturn(seeded);
         movieService = new MovieService(movieRepository);
+        lenient().when(movieRepository.findAll(ArgumentMatchers.<Specification<Movie>>any(), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
     }
 
     private Movie movie(int mid) {
@@ -63,54 +54,33 @@ class MovieServiceTest {
     }
 
     @Test
-    void getMovies_noFilters_returns30Movies() {
-        PageResponse<Movie> result = movieService.getMovies(null, null, null, null, 0, 100);
-        assertEquals(30, result.getTotalElements());
-    }
+    void getMovies_returnsPagedResults() {
+        List<Movie> content = List.of(movie(1001), movie(1002));
+        when(movieRepository.findAll(ArgumentMatchers.<Specification<Movie>>any(), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new PageImpl<>(content, PageRequest.of(0, 10), 2));
 
-    @Test
-    void getMovies_filterByGenre_returnsOnlyMatching() {
-        PageResponse<Movie> all = movieService.getMovies(null, null, null, null, 0, 100);
-        long expected = all.getContent().stream().filter(m -> "Action".equals(m.getGenre())).count();
-
-        PageResponse<Movie> result = movieService.getMovies("Action", null, null, null, 0, 100);
-        assertEquals(expected, result.getTotalElements());
-        assertTrue(result.getContent().stream().allMatch(m -> "Action".equals(m.getGenre())));
-    }
-
-    @Test
-    void getMovies_filterByRating_returnsOnlyMatching() {
-        PageResponse<Movie> all = movieService.getMovies(null, null, null, null, 0, 100);
-        long expected = all.getContent().stream().filter(m -> "PG-13".equals(m.getRating())).count();
-
-        PageResponse<Movie> result = movieService.getMovies(null, "PG-13", null, null, 0, 100);
-        assertEquals(expected, result.getTotalElements());
-    }
-
-    @Test
-    void getMovies_filterByMinPrice_excludesCheaper() {
-        PageResponse<Movie> result = movieService.getMovies(null, null, 10000.0, null, 0, 100);
-        assertEquals(0, result.getTotalElements());
-    }
-
-    @Test
-    void getMovies_filterByMaxPrice_excludesMoreExpensive() {
-        PageResponse<Movie> result = movieService.getMovies(null, null, null, 0.0, 0, 100);
-        assertEquals(0, result.getTotalElements());
-    }
-
-    @Test
-    void getMovies_pagination_returnsCorrectPage() {
-        PageResponse<Movie> page0 = movieService.getMovies(null, null, null, null, 0, 10);
-        PageResponse<Movie> page1 = movieService.getMovies(null, null, null, null, 1, 10);
-        assertEquals(10, page0.getContent().size());
-        assertEquals(10, page1.getContent().size());
-        assertNotEquals(page0.getContent().getFirst().getMID(), page1.getContent().getFirst().getMID());
+        PageResponse<Movie> result = movieService.getMovies(null, null, null, null, 0, 10);
+        assertEquals(2, result.getTotalElements());
+        assertEquals(2, result.getContent().size());
+        assertEquals(0, result.getPage());
+        assertEquals(10, result.getSize());
     }
 
     @Test
     void getMovies_pageOutOfRange_returnsEmptyContent() {
+        when(movieRepository.findAll(ArgumentMatchers.<Specification<Movie>>any(), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(999, 10), 30));
+
         PageResponse<Movie> result = movieService.getMovies(null, null, null, null, 999, 10);
+        assertEquals(0, result.getContent().size());
+        assertEquals(30, result.getTotalElements());
+    }
+
+    @Test
+    void getMovies_sizeZero_returnsEmptyContentWithTotal() {
+        when(movieRepository.count(ArgumentMatchers.<Specification<Movie>>any())).thenReturn(30L);
+
+        PageResponse<Movie> result = movieService.getMovies(null, null, null, null, 0, 0);
         assertEquals(0, result.getContent().size());
         assertEquals(30, result.getTotalElements());
     }
@@ -128,8 +98,7 @@ class MovieServiceTest {
     @Test
     void findById_unknownMid_returnsEmpty() {
         when(movieRepository.findById(1)).thenReturn(Optional.empty());
-        Optional<Movie> result = movieService.findById(1);
-        assertFalse(result.isPresent());
+        assertFalse(movieService.findById(1).isPresent());
     }
 
     @Test
@@ -146,8 +115,7 @@ class MovieServiceTest {
     @Test
     void add_duplicate_returnsEmpty() {
         when(movieRepository.existsById(5003)).thenReturn(true);
-        Optional<Movie> result = movieService.add(movie(5003));
-        assertFalse(result.isPresent());
+        assertFalse(movieService.add(movie(5003)).isPresent());
     }
 
     @Test
@@ -166,8 +134,7 @@ class MovieServiceTest {
     @Test
     void update_unknownMid_returnsEmpty() {
         when(movieRepository.findById(1)).thenReturn(Optional.empty());
-        Optional<Movie> result = movieService.update(1, movie(1));
-        assertFalse(result.isPresent());
+        assertFalse(movieService.update(1, movie(1)).isPresent());
     }
 
     @Test
@@ -192,15 +159,14 @@ class MovieServiceTest {
     @Test
     void delete_unknownMid_returnsEmpty() {
         when(movieRepository.findById(1)).thenReturn(Optional.empty());
-        Optional<Movie> result = movieService.delete(1);
-        assertFalse(result.isPresent());
+        assertFalse(movieService.delete(1).isPresent());
     }
 
     @Test
     void findByStudio_returnsMatchingMovies() {
         Movie m = movie(5007);
         m.setStudio(50);
-        when(movieRepository.findAll()).thenReturn(List.of(m));
+        when(movieRepository.findByStudioID(50)).thenReturn(List.of(m));
 
         List<Movie> result = movieService.findByStudio(50);
         assertTrue(result.stream().anyMatch(mv -> mv.getMID() == 5007));
@@ -208,7 +174,7 @@ class MovieServiceTest {
 
     @Test
     void findByStudio_noMatch_returnsEmptyList() {
-        List<Movie> result = movieService.findByStudio(999);
-        assertTrue(result.isEmpty());
+        when(movieRepository.findByStudioID(anyInt())).thenReturn(List.of());
+        assertTrue(movieService.findByStudio(999).isEmpty());
     }
 }

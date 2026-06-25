@@ -18,6 +18,7 @@ import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
@@ -245,6 +246,38 @@ class MovieIntegrationTest {
                 .then().statusCode(200)
                 .body("content.size()", is(0))
                 .body("totalElements", greaterThan(0));
+    }
+
+    @Test
+    @DisplayName("GET /movies?genre=Action returns only Action genre movies")
+    void getMovies_filterByGenre_returnsFilteredResults() {
+        when().get("/api/v1/movies?genre=Action&size=50")
+                .then().statusCode(200)
+                .body("content.genre", everyItem(equalTo("Action")));
+    }
+
+    @Test
+    @DisplayName("GET /movies?rating=G returns only G-rated movies")
+    void getMovies_filterByRating_returnsFilteredResults() {
+        when().get("/api/v1/movies?rating=G&size=50")
+                .then().statusCode(200)
+                .body("content.rating", everyItem(equalTo("G")));
+    }
+
+    @Test
+    @DisplayName("GET /movies?minPrice=100 returns only movies priced >= 100")
+    void getMovies_filterByMinPrice_returnsFilteredResults() {
+        when().get("/api/v1/movies?minPrice=100&size=50")
+                .then().statusCode(200)
+                .body("content.size()", is(5));
+    }
+
+    @Test
+    @DisplayName("GET /movies?maxPrice=10 returns only movies priced <= 10")
+    void getMovies_filterByMaxPrice_returnsFilteredResults() {
+        when().get("/api/v1/movies?maxPrice=10&size=50")
+                .then().statusCode(200)
+                .body("content.size()", is(2));
     }
 
     @Test

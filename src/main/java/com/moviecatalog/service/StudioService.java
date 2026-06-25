@@ -5,6 +5,8 @@ import com.moviecatalog.repository.StudioRepository;
 import com.moviecatalog.util.PageResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,11 +26,11 @@ public class StudioService {
     }
 
     public PageResponse<Studio> getStudios(int page, int size) {
-        List<Studio> all = studioRepository.findAll();
-        int fromIndex = page * size;
-        int toIndex = Math.min(fromIndex + size, all.size());
-        List<Studio> content = fromIndex >= all.size() ? List.of() : all.subList(fromIndex, toIndex);
-        return new PageResponse<>(content, page, size, all.size());
+        if (size <= 0) {
+            return new PageResponse<>(List.of(), page, 0, studioRepository.count());
+        }
+        Page<Studio> result = studioRepository.findAll(PageRequest.of(page, size));
+        return new PageResponse<>(result.getContent(), page, size, result.getTotalElements());
     }
 
     public Optional<Studio> add(Studio studio) {
