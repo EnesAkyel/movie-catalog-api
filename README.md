@@ -12,7 +12,8 @@ A RESTful Spring Boot API for managing a catalog of movies and studios, built as
 |---|---|
 | Runtime | Java 21, Spring Boot 3.5 |
 | Persistence | PostgreSQL 16, Spring Data JPA, Hibernate 6 |
-| Test Database | H2 (in-memory, auto-configured for all test contexts) |
+| Test Database | PostgreSQL 16 via Testcontainers (same engine as production) |
+| Schema Migrations | Flyway (V1 schema, V2 seed data) |
 | Validation | Jakarta Bean Validation |
 | API Docs | springdoc-openapi 2.8 (Swagger UI) |
 | Unit/Integration Tests | JUnit 5, Mockito, MockMvc, RestAssured |
@@ -105,7 +106,7 @@ docker compose down
 docker compose down -v
 ```
 
-The API is available at `http://localhost:8080`. On first startup, `DataInitializer` seeds 5 studios and 30 movies automatically. The seed is idempotent. Restarting the containers will not duplicate data.
+The API is available at `http://localhost:8080`. On first startup, Flyway runs `V1__init_schema.sql` (creates tables) and `V2__seed_data.sql` (seeds 5 studios and 30 movies). Flyway tracks applied migrations — restarting the containers will not re-run them.
 
 ### Without Docker
 
@@ -149,11 +150,8 @@ The project uses two complementary test layers.
 ### Service Tests — `MovieServiceTest` / `StudioServiceTest` (29 tests)
 `@ExtendWith(MockitoExtension.class)` with mocked repositories. Pure unit tests — no Spring context, no database. Covers all CRUD operations and filtering logic.
 
-### Integration Tests — `MovieIntegrationTest` (15 tests)
-`@SpringBootTest(webEnvironment = RANDOM_PORT)` with RestAssured against a live embedded server backed by H2. Covers an ordered CRUD lifecycle:
-1. Create studio → create movie → GET by ID → PUT update → GET by studio → GET all → DELETE → verify 404
-
-All test contexts use H2 via `src/test/resources/application.properties` — no PostgreSQL or Docker required to run the test suite.
+### Integration Tests — `MovieIntegrationTest` (18 tests)
+`@SpringBootTest(webEnvironment = RANDOM_PORT)` with RestAssured against a live embedded server backed by a real PostgreSQL 16 container (Testcontainers). Each test is isolated via `@BeforeEach`/`@AfterEach` — no shared ordering. Covers full CRUD, edge cases (price=0, size=0, mismatched MID, orphan studioID), and validation errors.
 
 ### Load Tests — Gatling
 Five simulations covering different load profiles, all built on shared scenarios in `PostScenarios.java`. Requires the API to be running via Docker Compose.
