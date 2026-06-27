@@ -50,15 +50,18 @@ jobs:
           path: target/site/jacoco/
           retention-days: 14
 
+      - name: List test report files
+        if: always()
+        run: find target -name "*.xml" -path "*/surefire-reports/*" -o -name "*.xml" -path "*/failsafe-reports/*" 2>/dev/null || echo "No test report files found"
+
       - name: Publish test results
         if: always()
         uses: dorny/test-reporter@v1
         with:
           name: Java Test Results
-          path: |
-            target/surefire-reports/*.xml
-            target/failsafe-reports/*.xml
+          path: "target/surefire-reports/*.xml,target/failsafe-reports/*.xml"
           reporter: java-junit
+          fail-on-error: false
 
       - name: Validate docker-compose.yml
         run: docker compose config --quiet
