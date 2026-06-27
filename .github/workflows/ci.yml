@@ -9,6 +9,10 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      checks: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,6 +49,14 @@ jobs:
           name: jacoco-report
           path: target/site/jacoco/
           retention-days: 14
+
+      - name: Publish test results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Java Test Results
+          path: "target/surefire-reports/*.xml,target/failsafe-reports/*.xml"
+          reporter: java-junit
 
       - name: Validate docker-compose.yml
         run: docker compose config --quiet
