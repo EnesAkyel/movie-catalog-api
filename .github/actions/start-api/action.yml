@@ -1,12 +1,25 @@
 name: Start movie-catalog-api
-description: Build the Docker image, start the API, and wait until it is healthy.
+description: Build Docker image from pre-built JAR, start the API, and wait until it is healthy.
 
 runs:
   using: composite
   steps:
+    - name: Download application JAR
+      uses: actions/download-artifact@v8
+      with:
+        name: app-jar
+        path: target/
+
+    - name: Build Docker image from pre-built JAR
+      shell: bash
+      run: |
+        cp target/movie-catalog-api-*.jar app.jar
+        docker build -f Dockerfile.ci -t movie-catalog-api .
+        rm app.jar
+
     - name: Start movie-catalog-api
       shell: bash
-      run: docker compose up -d --build
+      run: docker compose up -d
 
     - name: Wait for API to be ready
       shell: bash
