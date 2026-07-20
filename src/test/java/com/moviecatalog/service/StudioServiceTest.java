@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
@@ -31,6 +32,7 @@ class StudioServiceTest {
     @Mock
     private StudioRepository studioRepository;
 
+    @InjectMocks
     private StudioService studioService;
 
     private final List<Studio> allStudios = List.of(
@@ -46,7 +48,6 @@ class StudioServiceTest {
         lenient().when(studioRepository.findAll()).thenReturn(allStudios);
         lenient().when(studioRepository.findAll(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(allStudios, PageRequest.of(0, 10), 5));
-        studioService = new StudioService(studioRepository);
     }
 
     @Test

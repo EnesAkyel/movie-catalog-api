@@ -8,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
@@ -33,11 +34,11 @@ class MovieServiceTest {
     @Mock
     private MovieRepository movieRepository;
 
+    @InjectMocks
     private MovieService movieService;
 
     @BeforeEach
     void setUp() {
-        movieService = new MovieService(movieRepository);
         lenient().when(movieRepository.findAll(ArgumentMatchers.<Specification<Movie>>any(), any(org.springframework.data.domain.Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
     }
