@@ -27,6 +27,7 @@ jobs:
           cache: maven
 
       - name: Cache SonarCloud packages
+        if: github.ref == 'refs/heads/main'
         uses: actions/cache@v6
         with:
           path: ~/.sonar/cache

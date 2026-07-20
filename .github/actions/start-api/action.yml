@@ -12,7 +12,10 @@ runs:
 
     - name: Build Docker image from pre-built JAR
       shell: bash
-      run: docker build -f Dockerfile.ci -t movie-catalog-api .
+      run: |
+        cp target/movie-catalog-api-*.jar app.jar
+        docker build -f Dockerfile.ci -t movie-catalog-api .
+        rm app.jar
 
     - name: Start movie-catalog-api
       shell: bash
