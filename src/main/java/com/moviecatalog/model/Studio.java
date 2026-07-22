@@ -1,5 +1,6 @@
 package com.moviecatalog.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -58,6 +59,7 @@ public class Studio implements Comparable<Studio> {
         return "Studio{" + "SID=" + sid + ", name=" + name + '}';
     }
 
+    @JsonProperty("sid")
     public int getSID() {
         return sid;
     }

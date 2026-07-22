@@ -31,8 +31,7 @@ class MovieIntegrationTest {
     @LocalServerPort
     private int port;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final int TEST_MID = 7001;
     private static final int TEST_SID = 55;
