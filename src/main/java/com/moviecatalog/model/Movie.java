@@ -1,5 +1,6 @@
 package com.moviecatalog.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -75,6 +76,7 @@ public class Movie implements Comparable<Movie> {
         return "Movie{" + "MID=" + mid + ", name=" + name + ", genre=" + genre + ", price=" + price + ", rating=" + rating + '}';
     }
 
+    @JsonProperty("mid")
     public int getMID() {
         return mid;
     }
