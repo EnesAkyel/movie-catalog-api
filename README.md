@@ -15,7 +15,7 @@ A RESTful Spring Boot API for managing a catalog of movies and studios, built as
 | Test Database          | PostgreSQL 16 via Testcontainers (same engine as production)                                 |
 | Schema Migrations      | Flyway (V1 schema, V2 seed data)                                                             |
 | Validation             | Jakarta Bean Validation                                                                      |
-| API Docs               | springdoc-openapi 2.8 (Swagger UI)                                                           |
+| API Docs               | springdoc-openapi 3.0.3 (Swagger UI)                                                         |
 | Unit/Integration Tests | JUnit 5, Mockito, MockMvc, RestAssured                                                       |
 | Coverage               | JaCoCo                                                                                       |
 | Containerisation       | Docker, Docker Compose                                                                       |
@@ -110,7 +110,7 @@ The API is available at `http://localhost:8080`. On first startup, Flyway runs `
 
 ### Without Docker
 
-**Prerequisites:** Java 25, Maven (or use the included `./mvnw` wrapper), a running PostgreSQL instance, Docker (required for Testcontainers)
+**Prerequisites:** Java 25, a running PostgreSQL instance, Docker (required for Testcontainers). Maven 3.9.16 is required - the included `./mvnw` wrapper downloads it automatically if not present.
 
 Set the following environment variables (defaults shown):
 
