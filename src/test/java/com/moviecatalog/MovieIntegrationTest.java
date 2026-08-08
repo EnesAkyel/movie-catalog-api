@@ -4,6 +4,7 @@ import com.moviecatalog.model.Movie;
 import com.moviecatalog.model.Studio;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
+import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,10 +36,23 @@ class MovieIntegrationTest {
     private static final int TEST_MID = 7001;
     private static final int TEST_SID = 55;
 
+    private static String cachedToken;
+
     @BeforeEach
     void setUp() throws Exception {
         RestAssured.baseURI = "http://localhost";
         RestAssured.port = port;
+
+        if (cachedToken == null) {
+            cachedToken = given().contentType(ContentType.JSON)
+                    .body("{\"username\":\"admin\",\"password\":\"secret\"}")
+                    .when().post("/api/v1/auth/login")
+                    .then().statusCode(200)
+                    .extract().jsonPath().getString("token");
+        }
+        RestAssured.requestSpecification = new RequestSpecBuilder()
+                .addHeader("Authorization", "Bearer " + cachedToken)
+                .build();
         given().contentType(ContentType.JSON)
                 .body(json(new Studio(TEST_SID, "Test Studio")))
                 .when().post("/api/v1/studio")

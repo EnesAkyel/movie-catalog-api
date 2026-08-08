@@ -136,6 +136,10 @@ jobs:
 
       - name: Start movie-catalog-api
         uses: ./.github/actions/start-api
+        with:
+          auth-username: ${{ secrets.AUTH_USERNAME }}
+          auth-password: ${{ secrets.AUTH_PASSWORD }}
+          jwt-secret: ${{ secrets.JWT_SECRET }}
 
       - name: Checkout api-testing-ts
         uses: actions/checkout@v7
@@ -201,6 +205,10 @@ jobs:
 
       - name: Start movie-catalog-api
         uses: ./.github/actions/start-api
+        with:
+          auth-username: ${{ secrets.AUTH_USERNAME }}
+          auth-password: ${{ secrets.AUTH_PASSWORD }}
+          jwt-secret: ${{ secrets.JWT_SECRET }}
 
       - name: Checkout k6-performance-tests
         uses: actions/checkout@v7
@@ -262,6 +270,10 @@ jobs:
 
       - name: Start movie-catalog-api
         uses: ./.github/actions/start-api
+        with:
+          auth-username: ${{ secrets.AUTH_USERNAME }}
+          auth-password: ${{ secrets.AUTH_PASSWORD }}
+          jwt-secret: ${{ secrets.JWT_SECRET }}
 
       - name: Run Gatling simulation
         run: ./mvnw gatling:test -Dgatling.simulationClass=simulations.BasicSimulation
