@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.time.Instant;
 import java.util.Date;
 
 @Component
@@ -23,10 +24,11 @@ public class JwtUtil {
     }
 
     public String generateToken(String username) {
+        Instant now = Instant.now();
         return Jwts.builder()
                 .subject(username)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expirationMs))
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plusMillis(expirationMs)))
                 .signWith(key)
                 .compact();
     }
@@ -39,7 +41,7 @@ public class JwtUtil {
         try {
             parseClaims(token);
             return true;
-        } catch (Exception e) {
+        } catch (Exception _) {
             return false;
         }
     }
