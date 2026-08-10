@@ -270,7 +270,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: Checkout code
+      - name: Checkout movie-catalog-api
         uses: actions/checkout@v7
 
       - name: Set up Java 25
@@ -287,8 +287,15 @@ jobs:
           auth-password: ${{ secrets.AUTH_PASSWORD }}
           jwt-secret: ${{ secrets.JWT_SECRET }}
 
+      - name: Checkout gatling-performance-tests
+        uses: actions/checkout@v7
+        with:
+          repository: EnesAkyel/gatling-performance-tests
+          path: gatling-performance-tests
+
       - name: Run Gatling simulation
-        run: ./mvnw gatling:test -Dgatling.simulationClass=simulations.BasicSimulation
+        run: mvn gatling:test -Dgatling.simulationClass=simulations.BasicSimulation
+        working-directory: gatling-performance-tests
         env:
           AUTH_USERNAME: ${{ secrets.AUTH_USERNAME }}
           AUTH_PASSWORD: ${{ secrets.AUTH_PASSWORD }}
@@ -298,5 +305,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: gatling-report
-          path: target/gatling/
+          path: gatling-performance-tests/target/gatling/
           retention-days: 30
