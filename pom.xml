@@ -32,8 +32,6 @@
 		<sonar.projectKey>EnesAkyel_movie-catalog-api</sonar.projectKey>
 		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
 		<sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
-		<gatling.version>3.15.1</gatling.version>
-		<gatling-maven-plugin.version>4.21.10</gatling-maven-plugin.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -118,12 +116,6 @@
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>3.0.3</version>
-		</dependency>
-		<dependency>
-			<groupId>io.gatling.highcharts</groupId>
-			<artifactId>gatling-charts-highcharts</artifactId>
-			<version>${gatling.version}</version>
-			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
@@ -220,19 +212,6 @@
 						</configuration>
 					</execution>
 				</executions>
-			</plugin>
-			<plugin>
-				<groupId>io.gatling</groupId>
-				<artifactId>gatling-maven-plugin</artifactId>
-				<version>${gatling-maven-plugin.version}</version>
-				<configuration>
-				<jvmArgs>
-						<jvmArg>--add-opens=java.base/java.lang=ALL-UNNAMED</jvmArg>
-						<jvmArg>--add-opens=java.base/java.util=ALL-UNNAMED</jvmArg>
-						<jvmArg>--add-opens=java.base/java.io=ALL-UNNAMED</jvmArg>
-						<jvmArg>--enable-native-access=ALL-UNNAMED</jvmArg>
-					</jvmArgs>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>
