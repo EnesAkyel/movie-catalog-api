@@ -294,7 +294,7 @@ jobs:
           path: gatling-performance-tests
 
       - name: Run Gatling simulation
-        run: mvn gatling:test -Dgatling.simulationClass=simulations.BasicSimulation
+        run: mvn gatling:test -Dsimulation=simulations.BasicSimulation
         working-directory: gatling-performance-tests
         env:
           AUTH_USERNAME: ${{ secrets.AUTH_USERNAME }}
