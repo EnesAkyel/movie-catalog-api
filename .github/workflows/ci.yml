@@ -161,14 +161,23 @@ jobs:
       - name: Smoke tests
         run: npm run test:smoke
         working-directory: api-testing-ts
+        env:
+          AUTH_USERNAME: ${{ secrets.AUTH_USERNAME }}
+          AUTH_PASSWORD: ${{ secrets.AUTH_PASSWORD }}
 
       - name: Contract tests
         run: npm run test:contract
         working-directory: api-testing-ts
+        env:
+          AUTH_USERNAME: ${{ secrets.AUTH_USERNAME }}
+          AUTH_PASSWORD: ${{ secrets.AUTH_PASSWORD }}
 
       - name: Integration tests
         run: npm run test:integration
         working-directory: api-testing-ts
+        env:
+          AUTH_USERNAME: ${{ secrets.AUTH_USERNAME }}
+          AUTH_PASSWORD: ${{ secrets.AUTH_PASSWORD }}
 
       - name: Upload test reports
         if: always()
@@ -240,8 +249,11 @@ jobs:
           k6 version
 
       - name: Run smoke test
-        run: k6 run dist/smoke.js -e BASE_URL=http://localhost:8080 --summary-export=summary.json
+        run: k6 run dist/smoke.js -e BASE_URL=http://localhost:8080 -e AUTH_USERNAME="$AUTH_USERNAME" -e AUTH_PASSWORD="$AUTH_PASSWORD" --summary-export=summary.json
         working-directory: k6-performance-tests
+        env:
+          AUTH_USERNAME: ${{ secrets.AUTH_USERNAME }}
+          AUTH_PASSWORD: ${{ secrets.AUTH_PASSWORD }}
 
       - name: Upload k6 summary
         if: always()
@@ -277,6 +289,9 @@ jobs:
 
       - name: Run Gatling simulation
         run: ./mvnw gatling:test -Dgatling.simulationClass=simulations.BasicSimulation
+        env:
+          AUTH_USERNAME: ${{ secrets.AUTH_USERNAME }}
+          AUTH_PASSWORD: ${{ secrets.AUTH_PASSWORD }}
 
       - name: Upload Gatling report
         if: always()
