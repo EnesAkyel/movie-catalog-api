@@ -10,7 +10,7 @@ A RESTful Spring Boot API for managing a catalog of movies and studios, built as
 
 | Layer                  | Technology                                                                                                                                                                    |
 |------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Runtime                | Java 25, Spring Boot 4.1                                                                                                                                                      |
+| Runtime                | Java 25, Spring Boot 4.2                                                                                                                                                      |
 | Auth                   | Spring Security 7.1, JWT (jjwt) - all endpoints except `/api/v1/auth/login` require a Bearer token                                                                            |
 | Persistence            | PostgreSQL 16, Spring Data JPA, Hibernate 7                                                                                                                                   |
 | Test Database          | PostgreSQL 16 via Testcontainers (same engine as production)                                                                                                                  |
