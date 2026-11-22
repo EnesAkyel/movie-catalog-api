@@ -316,7 +316,6 @@ jobs:
     name: Gatling Simulations
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout movie-catalog-api
@@ -328,6 +327,14 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
           cache: maven
+
+      - name: Set up Maven
+        uses: stCarolas/setup-maven@v5
+        with:
+          maven-version: 3.9.16
+
+      - name: Verify Maven version
+        run: mvn --version
 
       - name: Start movie-catalog-api
         uses: ./.github/actions/start-api
